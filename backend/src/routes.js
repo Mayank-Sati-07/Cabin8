@@ -12,6 +12,7 @@ const journalEntry = require('./modules/journalEntry');
 const budgetEngine = require('./modules/budgetEngine');
 const reports = require('./modules/reports');
 const portal = require('./modules/portal');
+const ai = require('./modules/ai');
 
 const router = express.Router();
 
@@ -34,5 +35,6 @@ router.use('/journal-entries', journalEntry);
 router.use('/budgets', budgetEngine);
 router.use('/reports', reports);
 router.use('/portal', portal);
+router.use('/ai', ai);
 
 module.exports = router;

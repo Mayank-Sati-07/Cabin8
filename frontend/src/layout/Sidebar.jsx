@@ -92,8 +92,8 @@ export default function Sidebar({ collapsed, mobileOpen }) {
   return (
     <aside className={`app-sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
       <div className="sidebar-logo">
-        <div className="logo-icon">UF</div>
-        <span>Urban Furniture</span>
+        <div className="logo-icon">C8</div>
+        <span>Cabin8</span>
       </div>
 
       <nav className="sidebar-nav">

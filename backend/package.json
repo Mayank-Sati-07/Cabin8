@@ -1,7 +1,7 @@
 {
-  "name": "urban-furniture-accounting-backend",
+  "name": "cabin8-backend",
   "version": "1.0.0",
-  "description": "Backend for Urban Furniture Accounting System",
+  "description": "Backend for Cabin8 Accounting System",
   "main": "src/app.js",
   "scripts": {
     "start": "node src/app.js",

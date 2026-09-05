@@ -36,7 +36,7 @@ export default function ProfitAndLoss() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
         <div className="report-container">
           <div className="report-header">
-            <h1>Urban Furniture</h1>
+            <h1>Cabin8</h1>
             <div className="report-subtitle">Profit & Loss Statement — Fiscal Year {year}</div>
           </div>
 

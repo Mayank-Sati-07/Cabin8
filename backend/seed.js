@@ -59,7 +59,7 @@ async function main() {
       data: {
         name: 'Administrator',
         loginId: 'admin',
-        email: 'admin@urbanfurniture.local',
+        email: 'admin@cabin8.local',
         password: hashed,
         role: 'ADMIN'
       }

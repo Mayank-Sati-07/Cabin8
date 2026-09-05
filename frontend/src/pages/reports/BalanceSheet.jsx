@@ -33,7 +33,7 @@ export default function BalanceSheet() {
 
       <div className="report-container">
         <div className="report-header">
-          <h1>Urban Furniture</h1>
+          <h1>Cabin8</h1>
           <div className="report-subtitle">Balance Sheet — As of {asOf}</div>
         </div>
 

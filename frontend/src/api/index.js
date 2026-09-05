@@ -127,3 +127,7 @@ export const portalApi = {
   payInvoice: (invoiceId, data) => api.post(`/portal/pay/invoice/${invoiceId}`, data),
   getStatement: () => api.get('/portal/statement'),
 };
+
+export const aiApi = {
+  extractInvoice: (file) => api.postFile('/ai/extract-invoice', file),
+};

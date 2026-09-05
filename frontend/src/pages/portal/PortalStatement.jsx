@@ -28,7 +28,7 @@ export default function PortalStatement() {
         <button className="btn btn-secondary" onClick={() => window.print()}><Printer size={16} /> Print</button>
       </div>
       <div className="report-container">
-        <div className="report-header"><h1>Urban Furniture</h1><div className="report-subtitle">Statement of Account</div></div>
+        <div className="report-header"><h1>Cabin8</h1><div className="report-subtitle">Statement of Account</div></div>
         <div className="report-section">
           <table className="report-table">
             <thead><tr><td style={{ fontWeight: 700 }}>Date</td><td style={{ fontWeight: 700 }}>Description</td><td style={{ fontWeight: 700 }} className="amount">Debit</td><td style={{ fontWeight: 700 }} className="amount">Credit</td><td style={{ fontWeight: 700 }} className="amount">Balance</td></tr></thead>

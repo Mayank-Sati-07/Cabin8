@@ -32,11 +32,11 @@ export default function SignUp() {
       <BackgroundVideo />
       <div className="auth-card">
         <div className="auth-logo">
-          <div className="logo-icon">UF</div>
-          <h1>Urban Furniture</h1>
+          <div className="logo-icon">C8</div>
+          <h1>Cabin8</h1>
         </div>
         <h2>Create Account</h2>
-        <p className="auth-subtitle">Join the Urban Furniture ERP platform as an Accountant</p>
+        <p className="auth-subtitle">Join the Cabin8 ERP platform as an Accountant</p>
         {error && <div className="form-error" role="alert">{error}</div>}
         <form onSubmit={handleSubmit}>
           <div className="form-group">

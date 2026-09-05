@@ -1,6 +1,7 @@
 import fitz
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 from .ai_service import extract_invoice_data, extract_invoice_image
 from .validator import validate_invoice
@@ -9,6 +10,13 @@ from .validator import validate_invoice
 app = FastAPI(
     title="Cabin8 AI Document Autofill",
     version="1.0.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 

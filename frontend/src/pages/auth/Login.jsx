@@ -33,8 +33,8 @@ export default function Login() {
       <BackgroundVideo />
       <div className="auth-card">
         <div className="auth-logo">
-          <div className="logo-icon">UF</div>
-          <h1>Urban Furniture</h1>
+          <div className="logo-icon">C8</div>
+          <h1>Cabin8</h1>
         </div>
         <h2>Welcome Back</h2>
         <p className="auth-subtitle">Sign in to your account to continue</p>

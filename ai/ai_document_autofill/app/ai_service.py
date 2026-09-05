@@ -1,8 +1,9 @@
 import os
+import json
 import base64
 
 from dotenv import load_dotenv
-from google import genai
+from groq import Groq
 
 from .schemas import InvoiceData
 
@@ -14,13 +15,32 @@ ENV_FILE = BASE_DIR / ".env"
 
 load_dotenv(ENV_FILE)
 
-api_key = os.getenv("GEMINI_API_KEY")
+MODEL_NAME = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 
-if not api_key:
-    raise RuntimeError("GEMINI_API_KEY is missing from .env")
+# Image-based extraction needs a vision-capable model. Not every Groq API
+# key has access to one, so this is opt-in: leave unset to disable the
+# image upload path with a clear error instead of silently failing.
+VISION_MODEL_NAME = os.getenv("GROQ_VISION_MODEL")
+
+_client = None
 
 
-client = genai.Client(api_key=api_key)
+def get_client() -> Groq:
+    """Lazily creates the Groq client so the API can start (and /health
+    can respond) even before GROQ_API_KEY is configured. The key is only
+    required once an extraction is actually requested."""
+    global _client
+
+    if _client is None:
+        api_key = os.getenv("GROQ_API_KEY")
+        if not api_key:
+            raise RuntimeError(
+                "GROQ_API_KEY is missing. Copy .env.example to .env in "
+                "ai/ai_document_autofill/ and set your Groq API key."
+            )
+        _client = Groq(api_key=api_key)
+
+    return _client
 
 
 INVOICE_PROMPT = """
@@ -31,8 +51,6 @@ Analyze the provided invoice carefully.
 
 Extract ONLY information that is actually visible.
 Never guess, invent, or hallucinate missing information.
-
-Return the information using the provided InvoiceData schema.
 
 Important rules:
 
@@ -47,7 +65,7 @@ Important rules:
 9. Extract line-item total if visible.
 10. Extract subtotal, total tax and grand total if visible.
 11. Identify the currency.
-12. If something is not visible, return null.
+12. If something is not visible, use null.
 13. Do not calculate missing values.
 14. Do not invent values.
 15. Preserve the numbers exactly as shown wherever possible.
@@ -56,44 +74,47 @@ This data will be used by an accounting application,
 so accuracy is more important than completing every field.
 """
 
+SCHEMA_INSTRUCTIONS = """
+Respond with ONLY a single valid JSON object — no markdown, no code fences,
+no commentary before or after it — matching exactly this shape:
 
-def extract_invoice_image(
-    file_bytes: bytes,
-    mime_type: str
-) -> InvoiceData:
+{
+  "vendor_name": string or null,
+  "vendor_gstin": string or null,
+  "invoice_number": string or null,
+  "invoice_date": string or null,
+  "items": [
+    {
+      "name": string,
+      "quantity": number,
+      "unit_price": number,
+      "tax_rate": number or null,
+      "tax_amount": number or null,
+      "total": number or null
+    }
+  ],
+  "subtotal": number or null,
+  "tax_total": number or null,
+  "grand_total": number or null,
+  "currency": string
+}
+"""
 
-    encoded_image = base64.b64encode(file_bytes).decode("utf-8")
 
-    response = client.models.generate_content(
-        model="gemini-3.7-flash",
-        contents=[
-            {
-                "text": INVOICE_PROMPT
-            },
-            {
-                "inline_data": {
-                    "mime_type": mime_type,
-                    "data": encoded_image
-                }
-            }
-        ],
-        config={
-            "response_mime_type": "application/json",
-            "response_schema": InvoiceData,
-            "temperature": 0
-        }
-    )
+def _parse_invoice_json(content: str) -> InvoiceData:
+    try:
+        data = json.loads(content)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"AI response was not valid JSON: {exc}") from exc
 
-    if response.parsed is not None:
-        return response.parsed
-
-    return InvoiceData.model_validate_json(response.text)
+    return InvoiceData.model_validate(data)
 
 
 def extract_invoice_data(text: str) -> InvoiceData:
 
     prompt = f"""
 {INVOICE_PROMPT}
+{SCHEMA_INSTRUCTIONS}
 
 The invoice is provided as extracted text instead of an image.
 
@@ -102,17 +123,43 @@ Invoice text:
 {text}
 """
 
-    response = client.models.generate_content(
-        model="gemini-3.7-flash",
-        contents=prompt,
-        config={
-            "response_mime_type": "application/json",
-            "response_schema": InvoiceData,
-            "temperature": 0
-        }
+    response = get_client().chat.completions.create(
+        model=MODEL_NAME,
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+        temperature=0,
     )
 
-    if response.parsed is not None:
-        return response.parsed
+    return _parse_invoice_json(response.choices[0].message.content)
 
-    return InvoiceData.model_validate_json(response.text)
+
+def extract_invoice_image(
+    file_bytes: bytes,
+    mime_type: str
+) -> InvoiceData:
+
+    if not VISION_MODEL_NAME:
+        raise RuntimeError(
+            "Image-based invoice extraction requires a vision-capable model, "
+            "but no GROQ_VISION_MODEL is configured (or available on this "
+            "Groq API key). Please upload the invoice as a PDF instead, or "
+            "set GROQ_VISION_MODEL to a vision-capable model your key can use."
+        )
+
+    encoded_image = base64.b64encode(file_bytes).decode("utf-8")
+    data_url = f"data:{mime_type};base64,{encoded_image}"
+
+    response = get_client().chat.completions.create(
+        model=VISION_MODEL_NAME,
+        messages=[{
+            "role": "user",
+            "content": [
+                {"type": "text", "text": f"{INVOICE_PROMPT}\n{SCHEMA_INSTRUCTIONS}"},
+                {"type": "image_url", "image_url": {"url": data_url}},
+            ],
+        }],
+        response_format={"type": "json_object"},
+        temperature=0,
+    )
+
+    return _parse_invoice_json(response.choices[0].message.content)

@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Check, FileText } from 'lucide-react';
+import { ArrowLeft, Check, FileText, Sparkles } from 'lucide-react';
 import LineItemEditor from '../../components/LineItemEditor';
 import StatusBadge from '../../components/StatusBadge';
-import { purchaseApi, contactsApi, productsApi, analyticAccountsApi } from '../../api';
+import { purchaseApi, contactsApi, productsApi, analyticAccountsApi, aiApi } from '../../api';
 
 const today = () => new Date().toISOString().split('T')[0];
 
@@ -15,7 +15,10 @@ export default function PurchaseOrderForm() {
   const [products, setProducts] = useState([]);
   const [analyticAccounts, setAnalyticAccounts] = useState([]);
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [saving, setSaving] = useState(false);
+  const [extracting, setExtracting] = useState(false);
+  const fileInputRef = useRef(null);
   const [form, setForm] = useState({ vendorId: '', date: today(), status: 'DRAFT', lines: [] });
 
   useEffect(() => {
@@ -62,6 +65,41 @@ export default function PurchaseOrderForm() {
     }
   };
 
+  const handleAutofill = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError('');
+    setInfo('');
+    setExtracting(true);
+    try {
+      const result = await aiApi.extractInvoice(file);
+      const { invoice, matched } = result;
+
+      setForm(f => ({
+        ...f,
+        vendorId: matched.vendorId ? String(matched.vendorId) : f.vendorId,
+        date: invoice.invoice_date ? (new Date(invoice.invoice_date).toString() !== 'Invalid Date' ? new Date(invoice.invoice_date).toISOString().split('T')[0] : f.date) : f.date,
+        lines: matched.lines.map(l => ({
+          id: Date.now().toString() + Math.random(),
+          productId: l.productId ? String(l.productId) : '',
+          analyticAccountId: '',
+          qty: l.qty,
+          unitPrice: l.unitPrice,
+        })),
+      }));
+
+      const messages = [];
+      messages.push(matched.vendorId ? `Vendor matched: ${matched.vendorName}.` : invoice.vendor_name ? `Vendor "${invoice.vendor_name}" not found — please select one.` : 'No vendor detected.');
+      if (matched.unmatchedCount > 0) messages.push(`${matched.unmatchedCount} line item(s) need a product selected manually.`);
+      setInfo(messages.join(' '));
+    } catch (err) {
+      setError(err.message || 'Could not extract invoice data');
+    } finally {
+      setExtracting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const handleCreateBill = async () => {
     const vendorBillNo = window.prompt('Vendor bill reference number (optional)') || '';
     try {
@@ -80,6 +118,20 @@ export default function PurchaseOrderForm() {
           <h1>{isNew ? 'New Purchase Order' : form.poNumber}</h1>
           {!isNew && <StatusBadge status={form.status} />}
         </div>
+        {isNew && (
+          <div className="page-header-actions">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/pdf,image/jpeg,image/png,image/webp"
+              style={{ display: 'none' }}
+              onChange={handleAutofill}
+            />
+            <button type="button" className="btn btn-accent" disabled={extracting} onClick={() => fileInputRef.current?.click()}>
+              <Sparkles size={16} /> {extracting ? 'Reading Invoice...' : 'Autofill from Invoice (AI)'}
+            </button>
+          </div>
+        )}
         {!isNew && form.status === 'DRAFT' && (
           <div className="page-header-actions">
             <button className="btn btn-primary" onClick={handleConfirm}><Check size={16} /> Confirm</button>
@@ -94,6 +146,7 @@ export default function PurchaseOrderForm() {
 
       <div className="card"><div className="card-body">
         {error && <div className="form-error" role="alert">{error}</div>}
+        {info && <div className="form-success" role="status">{info}</div>}
         <form onSubmit={handleSubmit}>
           <div className="form-row">
             <div className="form-group"><label className="form-label">Vendor <span className="required">*</span></label>
