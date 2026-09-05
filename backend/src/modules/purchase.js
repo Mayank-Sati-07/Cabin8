@@ -6,9 +6,9 @@ const { postVendorBill } = require('./postingEngine');
 
 const router = express.Router();
 
-// ─── PURCHASE ORDERS ────────────────────────────────────────────────
+// po
 
-// LIST
+
 router.get('/orders', authenticate, authorize(['ADMIN', 'ACCOUNTANT']), async (req, res) => {
   try {
     const orders = await prisma.purchaseOrder.findMany({
@@ -21,7 +21,7 @@ router.get('/orders', authenticate, authorize(['ADMIN', 'ACCOUNTANT']), async (r
   }
 });
 
-// GET BY ID
+
 router.get('/orders/:id', authenticate, authorize(['ADMIN', 'ACCOUNTANT']), async (req, res) => {
   try {
     const order = await prisma.purchaseOrder.findUnique({
@@ -39,7 +39,7 @@ router.get('/orders/:id', authenticate, authorize(['ADMIN', 'ACCOUNTANT']), asyn
   }
 });
 
-// CREATE
+// create
 router.post('/orders', authenticate, authorize(['ADMIN', 'ACCOUNTANT']), async (req, res) => {
   try {
     const { vendorId, date, lines } = req.body;
@@ -74,7 +74,7 @@ router.post('/orders', authenticate, authorize(['ADMIN', 'ACCOUNTANT']), async (
   }
 });
 
-// UPDATE (only DRAFT)
+// draft
 router.put('/orders/:id', authenticate, authorize(['ADMIN', 'ACCOUNTANT']), async (req, res) => {
   try {
     const order = await prisma.purchaseOrder.findUnique({ where: { id: parseInt(req.params.id) } });
@@ -108,7 +108,7 @@ router.put('/orders/:id', authenticate, authorize(['ADMIN', 'ACCOUNTANT']), asyn
   }
 });
 
-// CONFIRM ORDER: DRAFT -> CONFIRMED
+// confirn
 router.post('/orders/:id/confirm', authenticate, authorize(['ADMIN', 'ACCOUNTANT']), async (req, res) => {
   try {
     const order = await prisma.purchaseOrder.findUnique({ where: { id: parseInt(req.params.id) } });
@@ -125,7 +125,7 @@ router.post('/orders/:id/confirm', authenticate, authorize(['ADMIN', 'ACCOUNTANT
   }
 });
 
-// CONVERT PO TO VENDOR BILL
+// po to vb
 router.post('/orders/:id/create-bill', authenticate, authorize(['ADMIN', 'ACCOUNTANT']), async (req, res) => {
   try {
     const order = await prisma.purchaseOrder.findUnique({
@@ -169,9 +169,9 @@ router.post('/orders/:id/create-bill', authenticate, authorize(['ADMIN', 'ACCOUN
   }
 });
 
-// ─── VENDOR BILLS ─────────────────────────────────────────────────
+// vb
 
-// LIST
+
 router.get('/bills', authenticate, authorize(['ADMIN', 'ACCOUNTANT']), async (req, res) => {
   try {
     const bills = await prisma.vendorBill.findMany({
@@ -184,7 +184,7 @@ router.get('/bills', authenticate, authorize(['ADMIN', 'ACCOUNTANT']), async (re
   }
 });
 
-// GET BY ID
+// by id
 router.get('/bills/:id', authenticate, authorize(['ADMIN', 'ACCOUNTANT']), async (req, res) => {
   try {
     const bill = await prisma.vendorBill.findUnique({
@@ -203,7 +203,7 @@ router.get('/bills/:id', authenticate, authorize(['ADMIN', 'ACCOUNTANT']), async
   }
 });
 
-// CONFIRM BILL: DRAFT -> CONFIRMED + auto post journal entry
+
 router.post('/bills/:id/confirm', authenticate, authorize(['ADMIN', 'ACCOUNTANT']), async (req, res) => {
   try {
     const bill = await prisma.vendorBill.findUnique({ where: { id: parseInt(req.params.id) } });
