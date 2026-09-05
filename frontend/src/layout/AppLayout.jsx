@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
+import BackgroundVideo from '../components/BackgroundVideo';
 import { useAuth } from '../hooks/useAuth';
 
 export default function AppLayout() {
@@ -19,6 +20,7 @@ export default function AppLayout() {
 
   return (
     <div className={`app-layout ${sidebarCollapsed ? 'sidebar-is-collapsed' : ''}`}>
+      <BackgroundVideo />
       <Sidebar
         collapsed={sidebarCollapsed}
         mobileOpen={mobileOpen}

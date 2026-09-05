@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { ROLES } from '../../constants/roles';
+import BackgroundVideo from '../../components/BackgroundVideo';
 
 export default function SignUp() {
   const [form, setForm] = useState({ name: '', email: '', password: '', role: ROLES.INVOICING_USER });
@@ -16,6 +17,7 @@ export default function SignUp() {
 
   return (
     <div className="auth-page">
+      <BackgroundVideo />
       <div className="auth-card">
         <div className="auth-logo">
           <div className="logo-icon">UF</div>

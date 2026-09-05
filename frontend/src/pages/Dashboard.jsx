@@ -25,7 +25,7 @@ const expenseBreakdown = [
   { name: 'Logistics', value: 15 },
 ];
 
-const PIE_COLORS = ['#1E40AF', '#3B82F6', '#D97706', '#60A5FA'];
+const PIE_COLORS = ['#38bdf8', '#2dd4bf', '#818cf8', '#60a5fa'];
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -56,11 +56,11 @@ export default function Dashboard() {
   }, []);
 
   const kpis = [
-    { label: 'Total Revenue', value: formatCurrency(data.revenue), change: '+12.5%', positive: true, icon: DollarSign, color: '#DCFCE7', iconColor: '#16A34A', onClick: () => navigate('/reports/profit-loss') },
-    { label: 'Outstanding Receivables', value: formatCurrency(data.receivables), change: '-4.2%', positive: true, icon: TrendingUp, color: '#DBEAFE', iconColor: '#1E40AF', onClick: () => navigate('/sales/invoices') },
-    { label: 'Outstanding Payables', value: formatCurrency(data.payables), change: '+2.1%', positive: false, icon: CreditCard, color: '#FEF3C7', iconColor: '#D97706', onClick: () => navigate('/purchase/bills') },
-    { label: 'Net Profit', value: formatCurrency(data.netProfit), change: data.netProfit >= 0 ? '+8.3%' : '-2.1%', positive: data.netProfit >= 0, icon: TrendingDown, color: data.netProfit >= 0 ? '#DCFCE7' : '#FEE2E2', iconColor: data.netProfit >= 0 ? '#16A34A' : '#DC2626', onClick: () => navigate('/reports/profit-loss') },
-    { label: 'Cash & Bank', value: formatCurrency(25600), change: '+5.7%', positive: true, icon: DollarSign, color: '#EDE9FE', iconColor: '#8B5CF6', onClick: () => navigate('/accounting/chart') },
+    { label: 'Total Revenue', value: formatCurrency(data.revenue), change: '+12.5%', positive: true, icon: DollarSign, color: 'rgba(52, 211, 153, 0.15)', iconColor: '#34d399', onClick: () => navigate('/reports/profit-loss') },
+    { label: 'Outstanding Receivables', value: formatCurrency(data.receivables), change: '-4.2%', positive: true, icon: TrendingUp, color: 'rgba(96, 165, 250, 0.15)', iconColor: '#60a5fa', onClick: () => navigate('/sales/invoices') },
+    { label: 'Outstanding Payables', value: formatCurrency(data.payables), change: '+2.1%', positive: false, icon: CreditCard, color: 'rgba(251, 191, 36, 0.15)', iconColor: '#fbbf24', onClick: () => navigate('/purchase/bills') },
+    { label: 'Net Profit', value: formatCurrency(data.netProfit), change: data.netProfit >= 0 ? '+8.3%' : '-2.1%', positive: data.netProfit >= 0, icon: TrendingDown, color: data.netProfit >= 0 ? 'rgba(52, 211, 153, 0.15)' : 'rgba(248, 113, 113, 0.15)', iconColor: data.netProfit >= 0 ? '#34d399' : '#f87171', onClick: () => navigate('/reports/profit-loss') },
+    { label: 'Cash & Bank', value: formatCurrency(25600), change: '+5.7%', positive: true, icon: DollarSign, color: 'rgba(129, 140, 248, 0.15)', iconColor: '#818cf8', onClick: () => navigate('/accounting/chart') },
   ];
 
   const quickActions = [
@@ -122,20 +122,20 @@ export default function Dashboard() {
               <AreaChart data={revenueData}>
                 <defs>
                   <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#1E40AF" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#1E40AF" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#38bdf8" stopOpacity={0}/>
                   </linearGradient>
                   <linearGradient id="colorExpenses" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#D97706" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#D97706" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#f87171" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#f87171" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                <XAxis dataKey="month" tick={{ fontSize: 12, fill: 'var(--color-muted-foreground)' }} />
-                <YAxis tick={{ fontSize: 12, fill: 'var(--color-muted-foreground)' }} tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} />
-                <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ borderRadius: 8, border: '1px solid var(--color-border)' }} />
-                <Area type="monotone" dataKey="revenue" stroke="#1E40AF" fill="url(#colorRevenue)" strokeWidth={2} name="Revenue" />
-                <Area type="monotone" dataKey="expenses" stroke="#D97706" fill="url(#colorExpenses)" strokeWidth={2} name="Expenses" />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(51,65,85,0.5)" />
+                <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#94a3b8' }} />
+                <YAxis tick={{ fontSize: 12, fill: '#94a3b8' }} tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} />
+                <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ borderRadius: 8, border: '1px solid #334155', background: 'rgba(15,23,42,0.95)', color: '#f1f5f9' }} />
+                <Area type="monotone" dataKey="revenue" stroke="#38bdf8" fill="url(#colorRevenue)" strokeWidth={2} name="Revenue" />
+                <Area type="monotone" dataKey="expenses" stroke="#f87171" fill="url(#colorExpenses)" strokeWidth={2} name="Expenses" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
