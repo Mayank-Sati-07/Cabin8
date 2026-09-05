@@ -1,11 +1,12 @@
-import { useLocation, Link } from 'react-router-dom';
-import { Menu, Search, Bell, Sun, Moon, ChevronRight } from 'lucide-react';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
+import { Menu, Search, Bell, Sun, Moon, ChevronRight, LogOut } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 const routeLabels = {
   '': 'Dashboard',
   'contacts': 'Contacts',
   'products': 'Products',
+  'categories': 'Categories',
   'purchase': 'Purchase',
   'sales': 'Sales',
   'accounting': 'Accounting',
@@ -23,6 +24,7 @@ const routeLabels = {
   'profit-loss': 'Profit & Loss',
   'balance-sheet': 'Balance Sheet',
   'budget': 'Budget Report',
+  'statement': 'Statement',
   'new': 'New',
   'auth': 'Authentication',
   'login': 'Login',
@@ -32,7 +34,8 @@ const routeLabels = {
 
 export default function Topbar({ onMenuClick, onCollapseClick }) {
   const location = useLocation();
-  const { theme, toggleTheme } = useAuth();
+  const { theme, toggleTheme, logout } = useAuth();
+  const navigate = useNavigate();
 
   const pathParts = location.pathname.split('/').filter(Boolean);
   const crumbs = pathParts.map((part, idx) => ({
@@ -40,6 +43,11 @@ export default function Topbar({ onMenuClick, onCollapseClick }) {
     path: '/' + pathParts.slice(0, idx + 1).join('/'),
     isLast: idx === pathParts.length - 1,
   }));
+
+  const handleLogout = () => {
+    logout();
+    navigate('/auth/login');
+  };
 
   return (
     <header className="app-topbar">
@@ -72,6 +80,9 @@ export default function Topbar({ onMenuClick, onCollapseClick }) {
         </button>
         <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
           {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+        </button>
+        <button className="topbar-icon-btn" onClick={handleLogout} aria-label="Log out" title="Log out">
+          <LogOut size={20} />
         </button>
       </div>
     </header>

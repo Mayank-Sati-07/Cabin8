@@ -2,16 +2,9 @@ import { Plus, Trash2 } from 'lucide-react';
 import { formatCurrency } from '../utils/currency';
 import { calculateLineTotal, calculateOrderTotals } from '../utils/taxCalc';
 
-export default function LineItemEditor({ lines, onChange, products = [], readOnly = false }) {
+export default function LineItemEditor({ lines, onChange, products = [], analyticAccounts = [], readOnly = false }) {
   const handleAddLine = () => {
-    const newLine = {
-      id: Date.now().toString(),
-      product_id: '',
-      description: '',
-      quantity: 1,
-      unit_price: 0,
-      tax_rate: 18,
-    };
+    const newLine = { id: Date.now().toString(), productId: '', analyticAccountId: '', qty: 1, unitPrice: 0 };
     onChange([...lines, newLine]);
   };
 
@@ -19,12 +12,9 @@ export default function LineItemEditor({ lines, onChange, products = [], readOnl
     const updated = lines.map((line, i) => {
       if (i !== idx) return line;
       const newLine = { ...line, [field]: value };
-      if (field === 'product_id') {
-        const product = products.find(p => p.id === value);
-        if (product) {
-          newLine.description = product.name;
-          newLine.unit_price = product.cost_price || product.sales_price || 0;
-        }
+      if (field === 'productId') {
+        const product = products.find(p => String(p.id) === String(value));
+        if (product) newLine.unitPrice = product.cost ?? product.salesPrice ?? 0;
       }
       return newLine;
     });
@@ -43,27 +33,26 @@ export default function LineItemEditor({ lines, onChange, products = [], readOnl
         <table className="line-item-table">
           <thead>
             <tr>
-              <th style={{ width: '25%' }}>Product</th>
-              <th style={{ width: '20%' }}>Description</th>
-              <th style={{ width: '10%' }}>Qty</th>
-              <th style={{ width: '14%' }}>Unit Price</th>
-              <th style={{ width: '10%' }}>Tax %</th>
-              <th style={{ width: '14%' }} className="col-amount">Subtotal</th>
+              <th style={{ width: '30%' }}>Product</th>
+              <th style={{ width: '25%' }}>Analytic Account</th>
+              <th style={{ width: '12%' }}>Qty</th>
+              <th style={{ width: '16%' }}>Unit Price</th>
+              <th style={{ width: '17%' }} className="col-amount">Total</th>
               {!readOnly && <th style={{ width: '7%' }}></th>}
             </tr>
           </thead>
           <tbody>
             {lines.map((line, idx) => {
-              const calc = calculateLineTotal(line.quantity || 0, line.unit_price || 0, line.tax_rate || 0);
+              const total = line.total != null ? line.total : calculateLineTotal(line.qty || 0, line.unitPrice || 0);
               return (
                 <tr key={line.id || idx}>
                   <td>
                     {readOnly ? (
-                      <span>{products.find(p => p.id === line.product_id)?.name || line.description}</span>
+                      <span>{products.find(p => String(p.id) === String(line.productId))?.name || '—'}</span>
                     ) : (
                       <select
-                        value={line.product_id}
-                        onChange={(e) => handleUpdateLine(idx, 'product_id', e.target.value)}
+                        value={line.productId}
+                        onChange={(e) => handleUpdateLine(idx, 'productId', e.target.value)}
                       >
                         <option value="">Select product</option>
                         {products.map(p => (
@@ -73,53 +62,46 @@ export default function LineItemEditor({ lines, onChange, products = [], readOnl
                     )}
                   </td>
                   <td>
-                    {readOnly ? line.description : (
-                      <input
-                        type="text"
-                        value={line.description}
-                        onChange={(e) => handleUpdateLine(idx, 'description', e.target.value)}
-                        placeholder="Description"
-                      />
+                    {readOnly ? (
+                      <span>{analyticAccounts.find(a => String(a.id) === String(line.analyticAccountId))?.name || '—'}</span>
+                    ) : (
+                      <select
+                        value={line.analyticAccountId || ''}
+                        onChange={(e) => handleUpdateLine(idx, 'analyticAccountId', e.target.value)}
+                      >
+                        <option value="">None</option>
+                        {analyticAccounts.map(a => (
+                          <option key={a.id} value={a.id}>{a.name}</option>
+                        ))}
+                      </select>
                     )}
                   </td>
                   <td>
-                    {readOnly ? line.quantity : (
+                    {readOnly ? line.qty : (
                       <input
                         type="number"
                         min="0"
-                        value={line.quantity}
-                        onChange={(e) => handleUpdateLine(idx, 'quantity', parseFloat(e.target.value) || 0)}
+                        value={line.qty}
+                        onChange={(e) => handleUpdateLine(idx, 'qty', parseFloat(e.target.value) || 0)}
                         style={{ width: '70px' }}
                       />
                     )}
                   </td>
                   <td>
-                    {readOnly ? formatCurrency(line.unit_price) : (
+                    {readOnly ? formatCurrency(line.unitPrice) : (
                       <input
                         type="number"
                         min="0"
                         step="0.01"
-                        value={line.unit_price}
-                        onChange={(e) => handleUpdateLine(idx, 'unit_price', parseFloat(e.target.value) || 0)}
+                        value={line.unitPrice}
+                        onChange={(e) => handleUpdateLine(idx, 'unitPrice', parseFloat(e.target.value) || 0)}
                       />
                     )}
                   </td>
-                  <td>
-                    {readOnly ? `${line.tax_rate}%` : (
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={line.tax_rate}
-                        onChange={(e) => handleUpdateLine(idx, 'tax_rate', parseFloat(e.target.value) || 0)}
-                        style={{ width: '60px' }}
-                      />
-                    )}
-                  </td>
-                  <td className="col-amount">{formatCurrency(calc.subtotal)}</td>
+                  <td className="col-amount">{formatCurrency(total)}</td>
                   {!readOnly && (
                     <td>
-                      <button className="remove-btn" onClick={() => handleRemoveLine(idx)} aria-label="Remove line">
+                      <button className="remove-btn" onClick={() => handleRemoveLine(idx)} aria-label="Remove line" type="button">
                         <Trash2 size={16} />
                       </button>
                     </td>
@@ -138,14 +120,6 @@ export default function LineItemEditor({ lines, onChange, products = [], readOnl
       )}
 
       <div className="line-item-totals">
-        <div className="total-row">
-          <span className="total-label">Subtotal</span>
-          <span className="total-value">{formatCurrency(totals.subtotal)}</span>
-        </div>
-        <div className="total-row">
-          <span className="total-label">Tax</span>
-          <span className="total-value">{formatCurrency(totals.totalTax)}</span>
-        </div>
         <div className="total-row grand">
           <span className="total-label">Total</span>
           <span className="total-value">{formatCurrency(totals.grandTotal)}</span>

@@ -1,23 +1,19 @@
-export const ORDER_STATUSES = {
+export const DOC_STATUSES = {
   DRAFT: 'DRAFT',
   CONFIRMED: 'CONFIRMED',
-  BILLED: 'BILLED',
-  INVOICED: 'INVOICED',
   CANCELLED: 'CANCELLED',
 };
 
-export const BILL_INVOICE_STATUSES = {
+export const BILL_STATUSES = {
   DRAFT: 'DRAFT',
-  POSTED: 'POSTED',
+  CONFIRMED: 'CONFIRMED',
   PAID: 'PAID',
-  PARTIALLY_PAID: 'PARTIALLY_PAID',
   CANCELLED: 'CANCELLED',
 };
 
-export const JOURNAL_ENTRY_STATUSES = {
+export const ENTRY_STATUSES = {
   DRAFT: 'DRAFT',
   POSTED: 'POSTED',
-  CANCELLED: 'CANCELLED',
 };
 
 export const BUDGET_STATUSES = {
@@ -25,12 +21,6 @@ export const BUDGET_STATUSES = {
   CONFIRMED: 'CONFIRMED',
   REVISED: 'REVISED',
   CANCELLED: 'CANCELLED',
-};
-
-export const CONTACT_TYPES = {
-  CUSTOMER: 'CUSTOMER',
-  VENDOR: 'VENDOR',
-  BOTH: 'BOTH',
 };
 
 export const PRODUCT_TYPES = {
@@ -42,9 +32,12 @@ export const PRODUCT_TYPES = {
 export const ACCOUNT_TYPES = {
   ASSET: 'ASSET',
   LIABILITY: 'LIABILITY',
-  EQUITY: 'EQUITY',
+  BANK: 'BANK',
+  CASH: 'CASH',
+  CAPITAL: 'CAPITAL',
   INCOME: 'INCOME',
   EXPENSE: 'EXPENSE',
+  OTHER_EXPENSE: 'OTHER_EXPENSE',
 };
 
 export const JOURNAL_TYPES = {
@@ -52,5 +45,14 @@ export const JOURNAL_TYPES = {
   PURCHASE: 'PURCHASE',
   BANK: 'BANK',
   CASH: 'CASH',
-  GENERAL: 'GENERAL',
+};
+
+export const ANALYTIC_TYPES = {
+  INCOME: 'INCOME',
+  EXPENSE: 'EXPENSE',
+};
+
+export const PAYMENT_METHODS = {
+  CASH: 'CASH',
+  BANK: 'BANK',
 };

@@ -1,19 +1,19 @@
 import { useState, useEffect } from 'react';
 import DataTable from '../../components/DataTable';
 import StatusBadge from '../../components/StatusBadge';
-import { purchaseApi } from '../../api';
+import { portalApi } from '../../api';
 import { formatCurrency } from '../../utils/currency';
-import { calculateOrderTotals } from '../../utils/taxCalc';
 
 export default function PortalBillList() {
   const [bills, setBills] = useState([]);
-  useEffect(() => { purchaseApi.getBills().then(setBills); }, []);
+  useEffect(() => { portalApi.getBills().then(setBills); }, []);
 
   const columns = [
-    { key: 'ref', label: 'Bill Ref', render: (r) => <strong>{r.vendor_ref || r.id}</strong> },
-    { key: 'date', label: 'Date', accessor: 'bill_date' },
-    { key: 'due', label: 'Due Date', accessor: 'due_date' },
-    { key: 'total', label: 'Amount', className: 'cell-amount', render: (r) => formatCurrency(calculateOrderTotals(r.lines || []).grandTotal) },
+    { key: 'billNumber', label: 'Bill #', render: (r) => <strong>{r.billNumber}</strong> },
+    { key: 'date', label: 'Date', render: (r) => new Date(r.billDate).toLocaleDateString() },
+    { key: 'due', label: 'Due Date', render: (r) => r.dueDate ? new Date(r.dueDate).toLocaleDateString() : '—' },
+    { key: 'total', label: 'Amount', className: 'cell-amount', render: (r) => formatCurrency(r.totalAmount) },
+    { key: 'paid', label: 'Paid', className: 'cell-amount', render: (r) => formatCurrency(r.amountPaid) },
     { key: 'status', label: 'Status', render: (r) => <StatusBadge status={r.status} /> },
   ];
 

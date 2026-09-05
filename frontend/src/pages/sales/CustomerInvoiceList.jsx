@@ -2,22 +2,21 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DataTable from '../../components/DataTable';
 import StatusBadge from '../../components/StatusBadge';
-import { salesApi, contactsApi } from '../../api';
+import { salesApi } from '../../api';
 import { formatCurrency } from '../../utils/currency';
-import { calculateOrderTotals } from '../../utils/taxCalc';
 
 export default function CustomerInvoiceList() {
   const [invoices, setInvoices] = useState([]);
-  const [contacts, setContacts] = useState([]);
   const navigate = useNavigate();
-  useEffect(() => { Promise.all([salesApi.getInvoices(), contactsApi.getAll()]).then(([i, c]) => { setInvoices(i); setContacts(c); }); }, []);
+  useEffect(() => { salesApi.getInvoices().then(setInvoices); }, []);
 
   const columns = [
-    { key: 'id', label: 'Invoice #', render: (r) => <strong>{r.id}</strong> },
-    { key: 'customer', label: 'Customer', render: (r) => contacts.find(c => c.id === r.customer_id)?.name || '—' },
-    { key: 'date', label: 'Invoice Date', accessor: 'invoice_date' },
-    { key: 'due', label: 'Due Date', accessor: 'due_date' },
-    { key: 'total', label: 'Amount', className: 'cell-amount', render: (r) => formatCurrency(calculateOrderTotals(r.lines || []).grandTotal) },
+    { key: 'invoiceNumber', label: 'Invoice #', render: (r) => <strong>{r.invoiceNumber}</strong> },
+    { key: 'customer', label: 'Customer', render: (r) => r.customer?.name || '—' },
+    { key: 'date', label: 'Invoice Date', render: (r) => new Date(r.invoiceDate).toLocaleDateString() },
+    { key: 'due', label: 'Due Date', render: (r) => r.dueDate ? new Date(r.dueDate).toLocaleDateString() : '—' },
+    { key: 'total', label: 'Amount', className: 'cell-amount', render: (r) => formatCurrency(r.totalAmount) },
+    { key: 'paid', label: 'Paid', className: 'cell-amount', render: (r) => formatCurrency(r.amountPaid) },
     { key: 'status', label: 'Status', render: (r) => <StatusBadge status={r.status} /> },
   ];
 

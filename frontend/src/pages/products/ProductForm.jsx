@@ -2,25 +2,59 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import ImageUpload from '../../components/ImageUpload';
-import { productsApi } from '../../api';
+import { productsApi, productCategoriesApi } from '../../api';
 
-const emptyProduct = { name: '', type: 'GOODS', sales_price: 0, cost_price: 0, category: '', image_url: '', is_active: true };
+const emptyProduct = { name: '', type: 'GOODS', salesPrice: 0, cost: 0, categoryId: '', image: '' };
 
 export default function ProductForm() {
   const { id } = useParams();
   const isNew = !id || id === 'new';
   const [form, setForm] = useState(emptyProduct);
+  const [categories, setCategories] = useState([]);
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => { if (!isNew) productsApi.getById(id).then(p => p && setForm(p)); }, [id, isNew]);
+  useEffect(() => {
+    productCategoriesApi.getAll().then(setCategories);
+    if (!isNew) productsApi.getById(id).then(p => p && setForm({ ...emptyProduct, ...p, categoryId: p.categoryId || '' }));
+  }, [id, isNew]);
 
   const handleChange = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 
+  const handleAddCategory = async () => {
+    const name = window.prompt('New category name');
+    if (!name) return;
+    try {
+      const category = await productCategoriesApi.create({ name });
+      setCategories(prev => [...prev, category]);
+      handleChange('categoryId', category.id);
+    } catch (err) {
+      alert(err.message || 'Could not create category');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isNew) await productsApi.create(form);
-    else await productsApi.update(id, form);
-    navigate('/products');
+    setError('');
+    setSaving(true);
+    const payload = {
+      name: form.name,
+      type: form.type,
+      salesPrice: parseFloat(form.salesPrice) || 0,
+      cost: parseFloat(form.cost) || 0,
+      categoryId: form.categoryId ? parseInt(form.categoryId) : null,
+      image: form.image || null,
+    };
+    try {
+      if (isNew) await productsApi.create(payload);
+      else await productsApi.update(id, payload);
+      navigate('/products');
+    } catch (err) {
+      setError(err.message || 'Could not save product');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -32,9 +66,10 @@ export default function ProductForm() {
         </div>
       </div>
       <div className="card"><div className="card-body">
+        {error && <div className="form-error" role="alert">{error}</div>}
         <form onSubmit={handleSubmit}>
           <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: 'var(--space-6)' }}>
-            <ImageUpload value={form.image_url} onChange={(v) => handleChange('image_url', v)} label="Product Image" />
+            <ImageUpload value={form.image} onChange={(v) => handleChange('image', v)} label="Product Image" />
             <div>
               <div className="form-row">
                 <div className="form-group"><label className="form-label">Name <span className="required">*</span></label><input type="text" className="form-input" value={form.name} onChange={e => handleChange('name', e.target.value)} required /></div>
@@ -43,20 +78,23 @@ export default function ProductForm() {
                 </div>
               </div>
               <div className="form-row">
-                <div className="form-group"><label className="form-label">Sales Price <span className="required">*</span></label><input type="number" className="form-input" step="0.01" value={form.sales_price} onChange={e => handleChange('sales_price', parseFloat(e.target.value) || 0)} required /></div>
-                <div className="form-group"><label className="form-label">Cost Price <span className="required">*</span></label><input type="number" className="form-input" step="0.01" value={form.cost_price} onChange={e => handleChange('cost_price', parseFloat(e.target.value) || 0)} required /></div>
+                <div className="form-group"><label className="form-label">Sales Price <span className="required">*</span></label><input type="number" className="form-input" step="0.01" value={form.salesPrice} onChange={e => handleChange('salesPrice', e.target.value)} required /></div>
+                <div className="form-group"><label className="form-label">Cost <span className="required">*</span></label><input type="number" className="form-input" step="0.01" value={form.cost} onChange={e => handleChange('cost', e.target.value)} required /></div>
               </div>
               <div className="form-group"><label className="form-label">Category</label>
-                <select className="form-select" value={form.category} onChange={e => handleChange('category', e.target.value)}>
-                  <option value="">Select category</option>
-                  {['Chairs', 'Tables', 'Sofas', 'Office Furniture', 'Services'].map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+                <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                  <select className="form-select" value={form.categoryId} onChange={e => handleChange('categoryId', e.target.value)}>
+                    <option value="">No category</option>
+                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                  <button type="button" className="btn btn-secondary" onClick={handleAddCategory}>+ New</button>
+                </div>
               </div>
             </div>
           </div>
           <div className="form-actions">
             <button type="button" className="btn btn-secondary" onClick={() => navigate('/products')}>Cancel</button>
-            <button type="submit" className="btn btn-primary">{isNew ? 'Create Product' : 'Save Changes'}</button>
+            <button type="submit" className="btn btn-primary" disabled={saving}>{isNew ? 'Create Product' : 'Save Changes'}</button>
           </div>
         </form>
       </div></div>

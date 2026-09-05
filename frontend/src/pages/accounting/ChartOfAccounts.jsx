@@ -1,36 +1,59 @@
 import { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import DataTable from '../../components/DataTable';
-import { accountingApi } from '../../api';
-import { formatCurrency } from '../../utils/currency';
+import { accountsApi } from '../../api';
+import { ACCOUNT_TYPES } from '../../constants/statuses';
+import { usePermission } from '../../hooks/usePermission';
+
+const TYPES = Object.values(ACCOUNT_TYPES);
 
 export default function ChartOfAccounts() {
   const [accounts, setAccounts] = useState([]);
   const [typeFilter, setTypeFilter] = useState('');
   const [showForm, setShowForm] = useState(false);
-  const [newAcct, setNewAcct] = useState({ account_code: '', account_name: '', type: 'ASSET' });
+  const [newAcct, setNewAcct] = useState({ name: '', type: 'ASSET' });
+  const [error, setError] = useState('');
+  const { isAdmin } = usePermission();
 
-  useEffect(() => { accountingApi.getAccounts().then(setAccounts); }, []);
+  const load = () => accountsApi.getAll().then(setAccounts);
+  useEffect(() => { load(); }, []);
 
   const filtered = typeFilter ? accounts.filter(a => a.type === typeFilter) : accounts;
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    await accountingApi.createAccount(newAcct);
-    setAccounts(await accountingApi.getAccounts());
-    setNewAcct({ account_code: '', account_name: '', type: 'ASSET' });
-    setShowForm(false);
+    setError('');
+    try {
+      await accountsApi.create(newAcct);
+      setNewAcct({ name: '', type: 'ASSET' });
+      setShowForm(false);
+      load();
+    } catch (err) {
+      setError(err.message || 'Could not create account');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this account?')) return;
+    try {
+      await accountsApi.remove(id);
+      load();
+    } catch (err) {
+      alert(err.message || 'Could not delete account');
+    }
   };
 
   const columns = [
-    { key: 'code', label: 'Code', accessor: 'account_code', render: (r) => <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{r.account_code}</span> },
-    { key: 'name', label: 'Account Name', accessor: 'account_name', render: (r) => <strong>{r.account_name}</strong> },
+    { key: 'name', label: 'Account Name', accessor: 'name', render: (r) => <strong>{r.name}</strong> },
     { key: 'type', label: 'Type', accessor: 'type', render: (r) => <span className={`type-badge ${r.type.toLowerCase()}`}>{r.type}</span> },
+    { key: 'actions', label: '', sortable: false, width: '60px', render: (r) => (
+      isAdmin && <button className="btn btn-sm btn-ghost" onClick={() => handleDelete(r.id)} aria-label="Delete"><Trash2 size={14} /></button>
+    )},
   ];
 
   const filters = (
     <>
-      {['', 'ASSET', 'LIABILITY', 'EQUITY', 'INCOME', 'EXPENSE'].map(t => (
+      {['', ...TYPES].map(t => (
         <button key={t} className={`filter-chip ${typeFilter === t ? 'active' : ''}`} onClick={() => setTypeFilter(t)}>{t || 'All'}</button>
       ))}
     </>
@@ -44,12 +67,12 @@ export default function ChartOfAccounts() {
       </div>
       {showForm && (
         <div className="card" style={{ marginBottom: 'var(--space-4)' }}><div className="card-body">
+          {error && <div className="form-error" role="alert">{error}</div>}
           <form onSubmit={handleCreate} style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-            <div className="form-group" style={{ marginBottom: 0 }}><label className="form-label">Code</label><input className="form-input" value={newAcct.account_code} onChange={e => setNewAcct(p => ({ ...p, account_code: e.target.value }))} required style={{ width: 100 }} /></div>
-            <div className="form-group" style={{ marginBottom: 0, flex: 1 }}><label className="form-label">Name</label><input className="form-input" value={newAcct.account_name} onChange={e => setNewAcct(p => ({ ...p, account_name: e.target.value }))} required /></div>
+            <div className="form-group" style={{ marginBottom: 0, flex: 1 }}><label className="form-label">Name</label><input className="form-input" value={newAcct.name} onChange={e => setNewAcct(p => ({ ...p, name: e.target.value }))} required /></div>
             <div className="form-group" style={{ marginBottom: 0 }}><label className="form-label">Type</label>
               <select className="form-select" value={newAcct.type} onChange={e => setNewAcct(p => ({ ...p, type: e.target.value }))}>
-                {['ASSET', 'LIABILITY', 'EQUITY', 'INCOME', 'EXPENSE'].map(t => <option key={t} value={t}>{t}</option>)}
+                {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <button type="submit" className="btn btn-primary">Add</button>

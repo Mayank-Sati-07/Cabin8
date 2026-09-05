@@ -1,11 +1,13 @@
 export const ROLES = {
   ADMIN: 'ADMIN',
-  INVOICING_USER: 'INVOICING_USER',
-  CONTACT: 'CONTACT',
+  ACCOUNTANT: 'ACCOUNTANT',
+  USER: 'USER',
 };
 
 export const ROLE_LABELS = {
   [ROLES.ADMIN]: 'Administrator',
-  [ROLES.INVOICING_USER]: 'Accountant',
-  [ROLES.CONTACT]: 'Contact',
+  [ROLES.ACCOUNTANT]: 'Accountant',
+  [ROLES.USER]: 'Contact (Portal)',
 };
+
+export const INTERNAL_ROLES = [ROLES.ADMIN, ROLES.ACCOUNTANT];

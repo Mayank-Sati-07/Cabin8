@@ -1,19 +1,18 @@
 import { useState, useEffect } from 'react';
 import DataTable from '../../components/DataTable';
-import StatusBadge from '../../components/StatusBadge';
-import { purchaseApi, contactsApi } from '../../api';
+import { paymentsApi } from '../../api';
 import { formatCurrency } from '../../utils/currency';
 
 export default function BillPaymentList() {
   const [payments, setPayments] = useState([]);
-  const [contacts, setContacts] = useState([]);
-  useEffect(() => { Promise.all([purchaseApi.getPayments(), contactsApi.getAll()]).then(([p, c]) => { setPayments(p); setContacts(c); }); }, []);
+  useEffect(() => { paymentsApi.getAll('SEND').then(setPayments); }, []);
 
   const columns = [
-    { key: 'date', label: 'Date', accessor: 'date' },
-    { key: 'vendor', label: 'Vendor', render: (r) => contacts.find(c => c.id === r.partner_id)?.name || '—' },
+    { key: 'date', label: 'Date', render: (r) => new Date(r.date).toLocaleDateString() },
+    { key: 'vendor', label: 'Vendor', render: (r) => r.partner?.name || '—' },
     { key: 'amount', label: 'Amount', className: 'cell-amount', render: (r) => formatCurrency(r.amount) },
-    { key: 'ref', label: 'Reference', accessor: 'reference' },
+    { key: 'method', label: 'Method', accessor: 'method' },
+    { key: 'note', label: 'Note', accessor: 'note' },
   ];
 
   return (

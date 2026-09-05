@@ -1,40 +1,31 @@
 import { createContext, useState, useCallback } from 'react';
-import { ROLES } from '../constants/roles';
+import { setSession, clearSession } from '../api/client';
 
 export const AuthContext = createContext(null);
 
-const DEFAULT_USER = {
-  id: 1,
-  name: 'Admin User',
-  email: 'admin@urbanfurniture.com',
-  role: ROLES.ADMIN,
-};
-
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('uf_user');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem('uf_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
   });
 
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('uf_theme') || 'light';
   });
 
-  const login = useCallback((userData) => {
+  const login = useCallback((userData, token) => {
     setUser(userData);
-    localStorage.setItem('uf_user', JSON.stringify(userData));
+    setSession(token, userData);
   }, []);
 
   const logout = useCallback(() => {
     setUser(null);
-    localStorage.removeItem('uf_user');
+    clearSession();
   }, []);
-
-  const switchRole = useCallback((role) => {
-    const updated = { ...user, role };
-    setUser(updated);
-    localStorage.setItem('uf_user', JSON.stringify(updated));
-  }, [user]);
 
   const toggleTheme = useCallback(() => {
     setTheme(prev => {
@@ -46,7 +37,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, switchRole, theme, toggleTheme }}>
+    <AuthContext.Provider value={{ user, login, logout, theme, toggleTheme }}>
       {children}
     </AuthContext.Provider>
   );

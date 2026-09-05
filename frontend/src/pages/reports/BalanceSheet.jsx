@@ -7,11 +7,11 @@ export default function BalanceSheet() {
   const [data, setData] = useState(null);
   const [asOf, setAsOf] = useState(new Date().toISOString().split('T')[0]);
 
-  useEffect(() => { reportsApi.getBalanceSheet({ as_of: asOf }).then(setData); }, [asOf]);
+  useEffect(() => { reportsApi.getBalanceSheet({ asOfDate: asOf }).then(setData); }, [asOf]);
 
   if (!data) return <p>Loading...</p>;
 
-  const totalLiabilitiesAndEquity = data.totalLiabilities + data.totalEquity + data.netIncome;
+  const totalLiabilitiesAndCapital = data.liabilities.total + data.capital.total;
 
   return (
     <>
@@ -26,9 +26,9 @@ export default function BalanceSheet() {
         </div>
       </div>
 
-      <div className={`balance-check ${data.isBalanced ? 'balanced' : 'unbalanced'}`}>
-        {data.isBalanced ? <CheckCircle size={20} /> : <XCircle size={20} />}
-        {data.isBalanced ? 'Assets = Liabilities + Equity — Balance Sheet is balanced' : 'Warning: Balance Sheet is NOT balanced'}
+      <div className={`balance-check ${data.balanced ? 'balanced' : 'unbalanced'}`}>
+        {data.balanced ? <CheckCircle size={20} /> : <XCircle size={20} />}
+        {data.balanced ? 'Assets = Liabilities + Capital — Balance Sheet is balanced' : 'Warning: Balance Sheet is NOT balanced'}
       </div>
 
       <div className="report-container">
@@ -41,10 +41,10 @@ export default function BalanceSheet() {
           <h2>Assets</h2>
           <table className="report-table">
             <tbody>
-              {data.assets.map(acct => (
-                <tr key={acct.id}><td className="indent-1">{acct.account_code} — {acct.account_name}</td><td className="amount">{formatCurrency(acct.balance)}</td></tr>
+              {data.assets.accounts.map(acct => (
+                <tr key={acct.id}><td className="indent-1">{acct.name}</td><td className="amount">{formatCurrency(acct.balance)}</td></tr>
               ))}
-              <tr className="subtotal"><td>Total Assets</td><td className="amount">{formatCurrency(data.totalAssets)}</td></tr>
+              <tr className="subtotal"><td>Total Assets</td><td className="amount">{formatCurrency(data.assets.total)}</td></tr>
             </tbody>
           </table>
         </div>
@@ -53,23 +53,22 @@ export default function BalanceSheet() {
           <h2>Liabilities</h2>
           <table className="report-table">
             <tbody>
-              {data.liabilities.map(acct => (
-                <tr key={acct.id}><td className="indent-1">{acct.account_code} — {acct.account_name}</td><td className="amount">{formatCurrency(Math.abs(acct.balance))}</td></tr>
+              {data.liabilities.accounts.map(acct => (
+                <tr key={acct.id}><td className="indent-1">{acct.name}</td><td className="amount">{formatCurrency(acct.balance)}</td></tr>
               ))}
-              <tr className="subtotal"><td>Total Liabilities</td><td className="amount">{formatCurrency(data.totalLiabilities)}</td></tr>
+              <tr className="subtotal"><td>Total Liabilities</td><td className="amount">{formatCurrency(data.liabilities.total)}</td></tr>
             </tbody>
           </table>
         </div>
 
         <div className="report-section">
-          <h2>Equity / Capital</h2>
+          <h2>Capital</h2>
           <table className="report-table">
             <tbody>
-              {data.equity.map(acct => (
-                <tr key={acct.id}><td className="indent-1">{acct.account_code} — {acct.account_name}</td><td className="amount">{formatCurrency(Math.abs(acct.balance))}</td></tr>
+              {data.capital.accounts.map(acct => (
+                <tr key={acct.id}><td className="indent-1">{acct.name}</td><td className="amount">{formatCurrency(acct.balance)}</td></tr>
               ))}
-              <tr><td className="indent-1">Current Year Net Profit</td><td className="amount">{formatCurrency(data.netIncome)}</td></tr>
-              <tr className="subtotal"><td>Total Equity</td><td className="amount">{formatCurrency(data.totalEquity + data.netIncome)}</td></tr>
+              <tr className="subtotal"><td>Total Capital</td><td className="amount">{formatCurrency(data.capital.total)}</td></tr>
             </tbody>
           </table>
         </div>
@@ -77,7 +76,7 @@ export default function BalanceSheet() {
         <div className="report-section">
           <table className="report-table">
             <tbody>
-              <tr className="grand-total"><td>Total Liabilities + Equity</td><td className="amount">{formatCurrency(totalLiabilitiesAndEquity)}</td></tr>
+              <tr className="grand-total"><td>Total Liabilities + Capital</td><td className="amount">{formatCurrency(totalLiabilitiesAndCapital)}</td></tr>
             </tbody>
           </table>
         </div>

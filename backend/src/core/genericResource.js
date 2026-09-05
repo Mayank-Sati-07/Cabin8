@@ -37,6 +37,7 @@ function genericResource(prisma, modelName, allowedRoles = ['ADMIN', 'ACCOUNTANT
       const record = await model.create({ data: req.body });
       res.status(201).json(record);
     } catch (err) {
+      if (err.code === 'P2002') return res.status(400).json({ error: `A ${modelName} with this ${err.meta?.target || 'value'} already exists` });
       res.status(500).json({ error: err.message });
     }
   });
@@ -51,6 +52,7 @@ function genericResource(prisma, modelName, allowedRoles = ['ADMIN', 'ACCOUNTANT
       res.json(record);
     } catch (err) {
       if (err.code === 'P2025') return res.status(404).json({ error: `${modelName} not found` });
+      if (err.code === 'P2002') return res.status(400).json({ error: `A ${modelName} with this ${err.meta?.target || 'value'} already exists` });
       res.status(500).json({ error: err.message });
     }
   });

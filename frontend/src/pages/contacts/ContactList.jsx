@@ -1,20 +1,30 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, List, LayoutGrid } from 'lucide-react';
+import { Plus, List, LayoutGrid, Trash2 } from 'lucide-react';
 import DataTable from '../../components/DataTable';
 import KanbanBoard from '../../components/KanbanBoard';
-import StatusBadge from '../../components/StatusBadge';
 import { contactsApi } from '../../api';
+import { usePermission } from '../../hooks/usePermission';
 
 export default function ContactList() {
   const [contacts, setContacts] = useState([]);
   const [view, setView] = useState('list');
-  const [typeFilter, setTypeFilter] = useState('');
   const navigate = useNavigate();
+  const { isAdmin } = usePermission();
 
-  useEffect(() => { contactsApi.getAll().then(setContacts); }, []);
+  const load = () => contactsApi.getAll().then(setContacts);
+  useEffect(() => { load(); }, []);
 
-  const filtered = typeFilter ? contacts.filter(c => c.type === typeFilter || c.type === 'BOTH') : contacts;
+  const handleDelete = async (e, id) => {
+    e.stopPropagation();
+    if (!window.confirm('Delete this contact?')) return;
+    try {
+      await contactsApi.remove(id);
+      load();
+    } catch (err) {
+      alert(err.message || 'Could not delete contact');
+    }
+  };
 
   const columns = [
     { key: 'name', label: 'Name', accessor: 'name', render: (row) => (
@@ -23,12 +33,15 @@ export default function ContactList() {
         <strong>{row.name}</strong>
       </div>
     )},
-    { key: 'type', label: 'Type', accessor: 'type', render: (row) => <span className={`type-badge ${row.type.toLowerCase()}`}>{row.type}</span> },
     { key: 'email', label: 'Email', accessor: 'email' },
-    { key: 'mobile', label: 'Phone', accessor: 'mobile' },
+    { key: 'phone', label: 'Phone', accessor: 'phone' },
     { key: 'city', label: 'City', accessor: 'city' },
-    { key: 'actions', label: '', sortable: false, width: '80px', render: (row) => (
-      <button className="btn btn-sm btn-ghost" onClick={(e) => { e.stopPropagation(); navigate(`/contacts/${row.id}`); }}>Edit</button>
+    { key: 'country', label: 'Country', accessor: 'country' },
+    { key: 'actions', label: '', sortable: false, width: '120px', render: (row) => (
+      <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+        <button className="btn btn-sm btn-ghost" onClick={(e) => { e.stopPropagation(); navigate(`/contacts/${row.id}`); }}>Edit</button>
+        {isAdmin && <button className="btn btn-sm btn-ghost" onClick={(e) => handleDelete(e, row.id)} aria-label="Delete"><Trash2 size={14} /></button>}
+      </div>
     )},
   ];
 
@@ -42,23 +55,12 @@ export default function ContactList() {
             <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted-foreground)' }}>{contact.email}</div>
           </div>
         </div>
-        <span className={`type-badge ${contact.type.toLowerCase()}`}>{contact.type}</span>
       </div>
       <div className="kanban-card-body">
-        <div className="card-row"><span>Phone</span><span>{contact.mobile}</span></div>
-        <div className="card-row"><span>City</span><span>{contact.city}</span></div>
+        <div className="card-row"><span>Phone</span><span>{contact.phone || '—'}</span></div>
+        <div className="card-row"><span>City</span><span>{contact.city || '—'}</span></div>
       </div>
     </div>
-  );
-
-  const filterBtns = (
-    <>
-      {['', 'CUSTOMER', 'VENDOR', 'BOTH'].map(t => (
-        <button key={t} className={`filter-chip ${typeFilter === t ? 'active' : ''}`} onClick={() => setTypeFilter(t)}>
-          {t || 'All'}
-        </button>
-      ))}
-    </>
   );
 
   return (
@@ -74,12 +76,9 @@ export default function ContactList() {
         </div>
       </div>
       {view === 'list' ? (
-        <DataTable columns={columns} data={filtered} onRowClick={(row) => navigate(`/contacts/${row.id}`)} searchPlaceholder="Search contacts..." actions={filterBtns} />
+        <DataTable columns={columns} data={contacts} onRowClick={(row) => navigate(`/contacts/${row.id}`)} searchPlaceholder="Search contacts..." />
       ) : (
-        <>
-          <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>{filterBtns}</div>
-          <KanbanBoard items={filtered} renderCard={renderCard} />
-        </>
+        <KanbanBoard items={contacts} renderCard={renderCard} />
       )}
     </>
   );

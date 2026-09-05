@@ -1,13 +1,14 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Package, ShoppingCart, FileText,
   BookOpen, PieChart, Wallet, TrendingUp, Calculator,
-  ClipboardList, Receipt, CreditCard, BarChart3, Globe
+  ClipboardList, Receipt, CreditCard, BarChart3, Globe, Tags, UserPlus
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { usePermission } from '../hooks/usePermission';
 import { ROLE_LABELS } from '../constants/roles';
 
-const navGroups = [
+const internalGroups = [
   {
     label: 'Overview',
     items: [
@@ -19,6 +20,7 @@ const navGroups = [
     items: [
       { to: '/contacts', icon: Users, label: 'Contacts' },
       { to: '/products', icon: Package, label: 'Products' },
+      { to: '/products/categories', icon: Tags, label: 'Product Categories' },
     ],
   },
   {
@@ -60,17 +62,32 @@ const navGroups = [
       { to: '/reports/budget', icon: PieChart, label: 'Budget Report' },
     ],
   },
-  {
-    label: 'Portal',
-    items: [
-      { to: '/portal', icon: Globe, label: 'Contact Portal' },
-    ],
-  },
 ];
+
+const adminGroup = {
+  label: 'Administration',
+  items: [
+    { to: '/auth/create-user', icon: UserPlus, label: 'Create User' },
+  ],
+};
+
+const portalGroup = {
+  label: 'Portal',
+  items: [
+    { to: '/portal', icon: Globe, label: 'Dashboard' },
+    { to: '/portal/invoices', icon: Receipt, label: 'My Invoices' },
+    { to: '/portal/bills', icon: FileText, label: 'My Bills' },
+    { to: '/portal/statement', icon: BarChart3, label: 'Statement' },
+  ],
+};
 
 export default function Sidebar({ collapsed, mobileOpen }) {
   const { user } = useAuth();
-  const location = useLocation();
+  const { isAdmin, isPortalUser } = usePermission();
+
+  const groups = isPortalUser
+    ? [portalGroup]
+    : [...internalGroups, ...(isAdmin ? [adminGroup] : [])];
 
   return (
     <aside className={`app-sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
@@ -80,14 +97,14 @@ export default function Sidebar({ collapsed, mobileOpen }) {
       </div>
 
       <nav className="sidebar-nav">
-        {navGroups.map(group => (
+        {groups.map(group => (
           <div className="sidebar-group" key={group.label}>
             <div className="sidebar-group-label">{group.label}</div>
             {group.items.map(item => (
               <NavLink
                 key={item.to}
                 to={item.to}
-                end={item.to === '/'}
+                end={item.to === '/' || item.to === '/portal'}
                 className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
               >
                 <item.icon size={20} />

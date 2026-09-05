@@ -14,6 +14,19 @@ function isStrongPassword(password) {
   return regex.test(password);
 }
 
+// Maps a Prisma unique-constraint violation (P2002) to a friendly message.
+// Acts as a safety net behind the pre-checks below for race conditions
+// (e.g. two signups with the same email/loginId submitted at once).
+function friendlyUniqueError(err) {
+  const target = err.meta?.target;
+  const field = Array.isArray(target) ? target[0] : target;
+
+  if (field?.includes('loginId')) return 'Login Id already exists';
+  if (field?.includes('email')) return 'Email already exists';
+  if (field?.includes('contactId')) return 'This contact is already linked to another user account';
+  return 'A user with these details already exists';
+}
+
 // LOGIN
 router.post('/login', async (req, res) => {
   try {
@@ -74,6 +87,7 @@ router.post('/signup', async (req, res) => {
 
     res.status(201).json({ id: user.id, name: user.name, role: user.role });
   } catch (err) {
+    if (err.code === 'P2002') return res.status(400).json({ error: friendlyUniqueError(err) });
     res.status(500).json({ error: err.message });
   }
 });
@@ -118,6 +132,7 @@ router.post('/users', authenticate, authorize(['ADMIN']), async (req, res) => {
 
     res.status(201).json({ id: user.id, name: user.name, role: user.role });
   } catch (err) {
+    if (err.code === 'P2002') return res.status(400).json({ error: friendlyUniqueError(err) });
     res.status(500).json({ error: err.message });
   }
 });

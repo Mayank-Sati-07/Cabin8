@@ -1,20 +1,25 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DataTable from '../../components/DataTable';
 import StatusBadge from '../../components/StatusBadge';
-import { salesApi, contactsApi } from '../../api';
+import { portalApi } from '../../api';
 import { formatCurrency } from '../../utils/currency';
-import { calculateOrderTotals } from '../../utils/taxCalc';
 
 export default function PortalInvoiceList() {
   const [invoices, setInvoices] = useState([]);
-  useEffect(() => { salesApi.getInvoices().then(setInvoices); }, []);
+  const navigate = useNavigate();
+  useEffect(() => { portalApi.getInvoices().then(setInvoices); }, []);
 
   const columns = [
-    { key: 'id', label: 'Invoice #', render: (r) => <strong>{r.id}</strong> },
-    { key: 'date', label: 'Date', accessor: 'invoice_date' },
-    { key: 'due', label: 'Due Date', accessor: 'due_date' },
-    { key: 'total', label: 'Amount', className: 'cell-amount', render: (r) => formatCurrency(calculateOrderTotals(r.lines || []).grandTotal) },
+    { key: 'invoiceNumber', label: 'Invoice #', render: (r) => <strong>{r.invoiceNumber}</strong> },
+    { key: 'date', label: 'Date', render: (r) => new Date(r.invoiceDate).toLocaleDateString() },
+    { key: 'due', label: 'Due Date', render: (r) => r.dueDate ? new Date(r.dueDate).toLocaleDateString() : '—' },
+    { key: 'total', label: 'Amount', className: 'cell-amount', render: (r) => formatCurrency(r.totalAmount) },
+    { key: 'paid', label: 'Paid', className: 'cell-amount', render: (r) => formatCurrency(r.amountPaid) },
     { key: 'status', label: 'Status', render: (r) => <StatusBadge status={r.status} /> },
+    { key: 'actions', label: '', sortable: false, width: '100px', render: (r) => (
+      r.status === 'CONFIRMED' && <button className="btn btn-sm btn-primary" onClick={e => { e.stopPropagation(); navigate(`/portal/payment?invoice_id=${r.id}`); }}>Pay</button>
+    )},
   ];
 
   return (

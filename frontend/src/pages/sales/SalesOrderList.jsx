@@ -3,20 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import DataTable from '../../components/DataTable';
 import StatusBadge from '../../components/StatusBadge';
-import { salesApi, contactsApi } from '../../api';
+import { salesApi } from '../../api';
 import { formatCurrency } from '../../utils/currency';
 import { calculateOrderTotals } from '../../utils/taxCalc';
 
 export default function SalesOrderList() {
   const [orders, setOrders] = useState([]);
-  const [contacts, setContacts] = useState([]);
   const navigate = useNavigate();
-  useEffect(() => { Promise.all([salesApi.getOrders(), contactsApi.getAll()]).then(([o, c]) => { setOrders(o); setContacts(c); }); }, []);
+  useEffect(() => { salesApi.getOrders().then(setOrders); }, []);
 
   const columns = [
-    { key: 'ref', label: 'SO #', render: (r) => <strong style={{ fontFamily: 'var(--font-mono)' }}>{r.reference}</strong> },
-    { key: 'customer', label: 'Customer', render: (r) => contacts.find(c => c.id === r.customer_id)?.name || '—' },
-    { key: 'date', label: 'Order Date', accessor: 'order_date' },
+    { key: 'soNumber', label: 'SO #', render: (r) => <strong style={{ fontFamily: 'var(--font-mono)' }}>{r.soNumber}</strong> },
+    { key: 'customer', label: 'Customer', render: (r) => r.customer?.name || '—' },
+    { key: 'date', label: 'Order Date', render: (r) => new Date(r.date).toLocaleDateString() },
     { key: 'total', label: 'Total', className: 'cell-amount', render: (r) => formatCurrency(calculateOrderTotals(r.lines || []).grandTotal) },
     { key: 'status', label: 'Status', render: (r) => <StatusBadge status={r.status} /> },
     { key: 'actions', label: '', sortable: false, width: '80px', render: (r) => <button className="btn btn-sm btn-ghost" onClick={e => { e.stopPropagation(); navigate(`/sales/orders/${r.id}`); }}>View</button> },

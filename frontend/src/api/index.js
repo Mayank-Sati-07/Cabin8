@@ -1,140 +1,129 @@
-import store from '../data/mockStore';
+import { api } from './client';
 
-const delay = (ms = 100) => new Promise(r => setTimeout(r, ms));
+export const authApi = {
+  login: (loginId, password) => api.post('/auth/login', { loginId, password }),
+  signup: (data) => api.post('/auth/signup', data),
+  createUser: (data) => api.post('/auth/users', data),
+};
+
+export const dashboardApi = {
+  get: () => api.get('/dashboard'),
+};
 
 export const contactsApi = {
-  async getAll(filters = {}) {
-    await delay();
-    let items = store.getAll('contacts');
-    if (filters.type) items = items.filter(c => c.type === filters.type || c.type === 'BOTH');
-    if (filters.search) {
-      const q = filters.search.toLowerCase();
-      items = items.filter(c => c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q) || c.mobile?.includes(q));
-    }
-    if (filters.is_active !== undefined) items = items.filter(c => c.is_active === filters.is_active);
-    return items;
-  },
-  async getById(id) { await delay(); return store.getById('contacts', id); },
-  async create(data) { await delay(); return store.create('contacts', data); },
-  async update(id, data) { await delay(); return store.update('contacts', id, data); },
-  async archive(id) { await delay(); return store.update('contacts', id, { is_active: false }); },
+  getAll: () => api.get('/contacts'),
+  getById: (id) => api.get(`/contacts/${id}`),
+  create: (data) => api.post('/contacts', data),
+  update: (id, data) => api.put(`/contacts/${id}`, data),
+  remove: (id) => api.del(`/contacts/${id}`),
+};
+
+export const productCategoriesApi = {
+  getAll: () => api.get('/product-categories'),
+  getById: (id) => api.get(`/product-categories/${id}`),
+  create: (data) => api.post('/product-categories', data),
+  update: (id, data) => api.put(`/product-categories/${id}`, data),
+  remove: (id) => api.del(`/product-categories/${id}`),
 };
 
 export const productsApi = {
-  async getAll(filters = {}) {
-    await delay();
-    let items = store.getAll('products');
-    if (filters.type) items = items.filter(p => p.type === filters.type);
-    if (filters.category) items = items.filter(p => p.category === filters.category);
-    if (filters.search) {
-      const q = filters.search.toLowerCase();
-      items = items.filter(p => p.name.toLowerCase().includes(q) || p.category?.toLowerCase().includes(q));
-    }
-    return items.filter(p => p.is_active !== false);
-  },
-  async getById(id) { await delay(); return store.getById('products', id); },
-  async create(data) { await delay(); return store.create('products', data); },
-  async update(id, data) { await delay(); return store.update('products', id, data); },
+  getAll: () => api.get('/products'),
+  getById: (id) => api.get(`/products/${id}`),
+  create: (data) => api.post('/products', data),
+  update: (id, data) => api.put(`/products/${id}`, data),
+  remove: (id) => api.del(`/products/${id}`),
 };
 
-export const accountingApi = {
-  async getAccounts() { await delay(); return store.getAll('accounts'); },
-  async createAccount(data) { await delay(); return store.create('accounts', data); },
-  async getJournals() { await delay(); return store.getAll('journals'); },
-  async createJournal(data) { await delay(); return store.create('journals', data); },
-  async getJournalEntries() { await delay(); return store.getAll('journalEntries'); },
-  async getJournalEntry(id) { await delay(); return store.getById('journalEntries', id); },
-  async createJournalEntry(data) { await delay(); return store.create('journalEntries', data); },
-  async updateJournalEntry(id, data) { await delay(); return store.update('journalEntries', id, data); },
+export const analyticAccountsApi = {
+  getAll: () => api.get('/analytic-accounts'),
+  getById: (id) => api.get(`/analytic-accounts/${id}`),
+  create: (data) => api.post('/analytic-accounts', data),
+  update: (id, data) => api.put(`/analytic-accounts/${id}`, data),
+  remove: (id) => api.del(`/analytic-accounts/${id}`),
+};
+
+export const accountsApi = {
+  getAll: () => api.get('/accounts'),
+  getById: (id) => api.get(`/accounts/${id}`),
+  create: (data) => api.post('/accounts', data),
+  update: (id, data) => api.put(`/accounts/${id}`, data),
+  remove: (id) => api.del(`/accounts/${id}`),
+};
+
+export const journalsApi = {
+  getAll: () => api.get('/journals'),
+  getById: (id) => api.get(`/journals/${id}`),
+  create: (data) => api.post('/journals', data),
+  update: (id, data) => api.put(`/journals/${id}`, data),
+  remove: (id) => api.del(`/journals/${id}`),
 };
 
 export const purchaseApi = {
-  async getOrders() { await delay(); return store.getAll('purchaseOrders'); },
-  async getOrder(id) { await delay(); return store.getById('purchaseOrders', id); },
-  async createOrder(data) { await delay(); return store.create('purchaseOrders', { ...data, status: 'DRAFT' }); },
-  async updateOrder(id, data) { await delay(); return store.update('purchaseOrders', id, data); },
-  async getBills() { await delay(); return store.getAll('vendorBills'); },
-  async getBill(id) { await delay(); return store.getById('vendorBills', id); },
-  async createBill(data) { await delay(); return store.create('vendorBills', { ...data, status: 'DRAFT' }); },
-  async updateBill(id, data) { await delay(); return store.update('vendorBills', id, data); },
-  async getPayments() { await delay(); return store.getAll('payments').filter(p => p.payment_type === 'OUTBOUND'); },
+  getOrders: () => api.get('/purchase/orders'),
+  getOrder: (id) => api.get(`/purchase/orders/${id}`),
+  createOrder: (data) => api.post('/purchase/orders', data),
+  updateOrder: (id, data) => api.put(`/purchase/orders/${id}`, data),
+  confirmOrder: (id) => api.post(`/purchase/orders/${id}/confirm`),
+  createBill: (id, data) => api.post(`/purchase/orders/${id}/create-bill`, data),
+
+  getBills: () => api.get('/purchase/bills'),
+  getBill: (id) => api.get(`/purchase/bills/${id}`),
+  confirmBill: (id) => api.post(`/purchase/bills/${id}/confirm`),
+  cancelBill: (id) => api.post(`/purchase/bills/${id}/cancel`),
 };
 
 export const salesApi = {
-  async getOrders() { await delay(); return store.getAll('salesOrders'); },
-  async getOrder(id) { await delay(); return store.getById('salesOrders', id); },
-  async createOrder(data) { await delay(); return store.create('salesOrders', { ...data, status: 'DRAFT' }); },
-  async updateOrder(id, data) { await delay(); return store.update('salesOrders', id, data); },
-  async getInvoices() { await delay(); return store.getAll('customerInvoices'); },
-  async getInvoice(id) { await delay(); return store.getById('customerInvoices', id); },
-  async createInvoice(data) { await delay(); return store.create('customerInvoices', { ...data, status: 'DRAFT' }); },
-  async updateInvoice(id, data) { await delay(); return store.update('customerInvoices', id, data); },
-  async getPayments() { await delay(); return store.getAll('payments').filter(p => p.payment_type === 'INBOUND'); },
-};
+  getOrders: () => api.get('/sales/orders'),
+  getOrder: (id) => api.get(`/sales/orders/${id}`),
+  createOrder: (data) => api.post('/sales/orders', data),
+  updateOrder: (id, data) => api.put(`/sales/orders/${id}`, data),
+  confirmOrder: (id) => api.post(`/sales/orders/${id}/confirm`),
+  createInvoice: (id, data) => api.post(`/sales/orders/${id}/create-invoice`, data),
 
-export const budgetApi = {
-  async getBudgets() { await delay(); return store.getAll('budgets'); },
-  async getBudget(id) { await delay(); return store.getById('budgets', id); },
-  async createBudget(data) { await delay(); return store.create('budgets', { ...data, status: 'DRAFT' }); },
-  async updateBudget(id, data) { await delay(); return store.update('budgets', id, data); },
-  async getAnalyticAccounts() { await delay(); return store.getAll('analyticAccounts'); },
-  async createAnalyticAccount(data) { await delay(); return store.create('analyticAccounts', data); },
-  async updateAnalyticAccount(id, data) { await delay(); return store.update('analyticAccounts', id, data); },
-};
-
-export const reportsApi = {
-  async getProfitAndLoss(params = {}) {
-    await delay();
-    const entries = store.getAll('journalEntries').filter(e => e.state === 'POSTED');
-    const accounts = store.getAll('accounts');
-    let totalIncome = 0, totalExpenses = 0;
-    entries.forEach(entry => {
-      entry.items?.forEach(item => {
-        const acct = accounts.find(a => a.id === item.account_id);
-        if (acct?.type === 'INCOME') totalIncome += (item.credit - item.debit);
-        if (acct?.type === 'EXPENSE') totalExpenses += (item.debit - item.credit);
-      });
-    });
-    return {
-      income: [{ name: 'Sales Income', amount: totalIncome }],
-      expenses: [{ name: 'Purchase Expense / COGS', amount: totalExpenses }],
-      totalIncome, totalExpenses,
-      grossProfit: totalIncome - totalExpenses * 0.7,
-      netProfit: totalIncome - totalExpenses,
-    };
-  },
-  async getBalanceSheet(params = {}) {
-    await delay();
-    const entries = store.getAll('journalEntries').filter(e => e.state === 'POSTED');
-    const accounts = store.getAll('accounts');
-    const balances = {};
-    accounts.forEach(a => { balances[a.id] = { ...a, balance: 0 }; });
-    entries.forEach(entry => {
-      entry.items?.forEach(item => {
-        if (balances[item.account_id]) {
-          balances[item.account_id].balance += (item.debit - item.credit);
-        }
-      });
-    });
-    const grouped = { ASSET: [], LIABILITY: [], EQUITY: [], INCOME: [], EXPENSE: [] };
-    Object.values(balances).forEach(b => {
-      if (grouped[b.type]) grouped[b.type].push(b);
-    });
-    const totalAssets = grouped.ASSET.reduce((s, a) => s + a.balance, 0);
-    const totalLiabilities = Math.abs(grouped.LIABILITY.reduce((s, a) => s + a.balance, 0));
-    const totalEquity = Math.abs(grouped.EQUITY.reduce((s, a) => s + a.balance, 0));
-    const netIncome = Math.abs(grouped.INCOME.reduce((s, a) => s + a.balance, 0)) - grouped.EXPENSE.reduce((s, a) => s + a.balance, 0);
-    return {
-      assets: grouped.ASSET,
-      liabilities: grouped.LIABILITY,
-      equity: grouped.EQUITY,
-      totalAssets, totalLiabilities, totalEquity, netIncome,
-      isBalanced: Math.abs(totalAssets - (totalLiabilities + totalEquity + netIncome)) < 0.01,
-    };
-  },
+  getInvoices: () => api.get('/sales/invoices'),
+  getInvoice: (id) => api.get(`/sales/invoices/${id}`),
+  confirmInvoice: (id) => api.post(`/sales/invoices/${id}/confirm`),
+  cancelInvoice: (id) => api.post(`/sales/invoices/${id}/cancel`),
 };
 
 export const paymentsApi = {
-  async getAll() { await delay(); return store.getAll('payments'); },
-  async create(data) { await delay(); return store.create('payments', data); },
+  getAll: (type) => api.get('/payments', type ? { type } : undefined),
+  getForBill: (billId) => api.get(`/payments/bill/${billId}`),
+  payBill: (billId, data) => api.post(`/payments/bill/${billId}`, data),
+  getForInvoice: (invoiceId) => api.get(`/payments/invoice/${invoiceId}`),
+  payInvoice: (invoiceId, data) => api.post(`/payments/invoice/${invoiceId}`, data),
+};
+
+export const journalEntriesApi = {
+  getAll: () => api.get('/journal-entries'),
+  getById: (id) => api.get(`/journal-entries/${id}`),
+  create: (data) => api.post('/journal-entries', data),
+  update: (id, data) => api.put(`/journal-entries/${id}`, data),
+  post: (id) => api.post(`/journal-entries/${id}/post`),
+  reset: (id) => api.post(`/journal-entries/${id}/reset`),
+};
+
+export const budgetsApi = {
+  getAll: () => api.get('/budgets'),
+  getById: (id) => api.get(`/budgets/${id}`),
+  create: (data) => api.post('/budgets', data),
+  confirm: (id) => api.post(`/budgets/${id}/confirm`),
+  cancel: (id) => api.post(`/budgets/${id}/cancel`),
+  revise: (id, data) => api.post(`/budgets/${id}/revise`, data),
+};
+
+export const reportsApi = {
+  getProfitAndLoss: (params) => api.get('/reports/profit-loss', params),
+  getBalanceSheet: (params) => api.get('/reports/balance-sheet', params),
+  getBudgetReport: () => api.get('/reports/budget'),
+};
+
+export const portalApi = {
+  getDashboard: () => api.get('/portal/dashboard'),
+  getInvoices: () => api.get('/portal/invoices'),
+  getInvoice: (id) => api.get(`/portal/invoices/${id}`),
+  getBills: () => api.get('/portal/bills'),
+  getBill: (id) => api.get(`/portal/bills/${id}`),
+  payInvoice: (invoiceId, data) => api.post(`/portal/pay/invoice/${invoiceId}`, data),
+  getStatement: () => api.get('/portal/statement'),
 };

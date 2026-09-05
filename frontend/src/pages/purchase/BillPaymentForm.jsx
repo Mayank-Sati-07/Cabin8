@@ -1,19 +1,36 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import AmountInput from '../../components/AmountInput';
-import { paymentsApi } from '../../api';
+import { paymentsApi, purchaseApi } from '../../api';
+import { formatCurrency } from '../../utils/currency';
 
 export default function BillPaymentForm() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const billId = searchParams.get('bill_id') || '';
-  const [form, setForm] = useState({ amount: 0, date: new Date().toISOString().split('T')[0], journal_id: 'j3', reference: '' });
+  const [bill, setBill] = useState(null);
+  const [error, setError] = useState('');
+  const [form, setForm] = useState({ amount: 0, method: 'BANK', date: new Date().toISOString().split('T')[0], note: '' });
+
+  useEffect(() => { if (billId) purchaseApi.getBill(billId).then(setBill); }, [billId]);
+
+  const amountDue = bill ? bill.totalAmount - bill.amountPaid : 0;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await paymentsApi.create({ ...form, payment_type: 'OUTBOUND', partner_id: '', bill_id: billId });
-    navigate('/purchase/payments');
+    setError('');
+    try {
+      await paymentsApi.payBill(billId, {
+        amount: parseFloat(form.amount),
+        method: form.method,
+        date: form.date,
+        note: form.note || null,
+      });
+      navigate('/purchase/payments');
+    } catch (err) {
+      setError(err.message || 'Could not register payment');
+    }
   };
 
   return (
@@ -25,6 +42,12 @@ export default function BillPaymentForm() {
         </div>
       </div>
       <div className="card"><div className="card-body">
+        {error && <div className="form-error" role="alert">{error}</div>}
+        {bill && (
+          <p style={{ marginBottom: 'var(--space-4)', color: 'var(--color-muted-foreground)' }}>
+            {bill.vendor?.name} — {bill.billNumber} — Outstanding: <strong>{formatCurrency(amountDue)}</strong>
+          </p>
+        )}
         <form onSubmit={handleSubmit}>
           <div className="form-row">
             <div className="form-group"><label className="form-label">Amount <span className="required">*</span></label><AmountInput value={form.amount} onChange={(v) => setForm(f => ({ ...f, amount: v }))} /></div>
@@ -32,11 +55,11 @@ export default function BillPaymentForm() {
           </div>
           <div className="form-row">
             <div className="form-group"><label className="form-label">Payment Method</label>
-              <select className="form-select" value={form.journal_id} onChange={e => setForm(f => ({ ...f, journal_id: e.target.value }))}>
-                <option value="j3">Bank</option><option value="j4">Cash</option>
+              <select className="form-select" value={form.method} onChange={e => setForm(f => ({ ...f, method: e.target.value }))}>
+                <option value="BANK">Bank</option><option value="CASH">Cash</option>
               </select>
             </div>
-            <div className="form-group"><label className="form-label">Reference</label><input className="form-input" value={form.reference} onChange={e => setForm(f => ({ ...f, reference: e.target.value }))} placeholder="Cheque No / Memo" /></div>
+            <div className="form-group"><label className="form-label">Note</label><input className="form-input" value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} placeholder="Cheque No / Memo" /></div>
           </div>
           <div className="form-actions">
             <button type="button" className="btn btn-secondary" onClick={() => navigate(-1)}>Cancel</button>

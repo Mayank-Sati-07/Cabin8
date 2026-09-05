@@ -1,34 +1,52 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, List, LayoutGrid } from 'lucide-react';
+import { Plus, List, LayoutGrid, Trash2 } from 'lucide-react';
 import DataTable from '../../components/DataTable';
 import KanbanBoard from '../../components/KanbanBoard';
-import { productsApi } from '../../api';
+import { productsApi, productCategoriesApi } from '../../api';
 import { formatCurrency } from '../../utils/currency';
+import { usePermission } from '../../hooks/usePermission';
 
 export default function ProductList() {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [view, setView] = useState('list');
   const [catFilter, setCatFilter] = useState('');
   const navigate = useNavigate();
+  const { isAdmin } = usePermission();
 
-  useEffect(() => { productsApi.getAll().then(setProducts); }, []);
+  const load = () => productsApi.getAll().then(setProducts);
+  useEffect(() => { load(); productCategoriesApi.getAll().then(setCategories); }, []);
 
-  const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
-  const filtered = catFilter ? products.filter(p => p.category === catFilter) : products;
+  const categoryName = (id) => categories.find(c => c.id === id)?.name || '—';
+  const filtered = catFilter ? products.filter(p => String(p.categoryId) === catFilter) : products;
+
+  const handleDelete = async (e, id) => {
+    e.stopPropagation();
+    if (!window.confirm('Delete this product?')) return;
+    try {
+      await productsApi.remove(id);
+      load();
+    } catch (err) {
+      alert(err.message || 'Could not delete product');
+    }
+  };
 
   const columns = [
     { key: 'name', label: 'Product', accessor: 'name', render: (row) => <strong>{row.name}</strong> },
     { key: 'type', label: 'Type', accessor: 'type', render: (row) => <span className={`type-badge ${row.type.toLowerCase()}`}>{row.type}</span> },
-    { key: 'category', label: 'Category', accessor: 'category' },
-    { key: 'sales_price', label: 'Sales Price', accessor: 'sales_price', className: 'cell-amount', render: (row) => formatCurrency(row.sales_price) },
-    { key: 'cost_price', label: 'Cost Price', accessor: 'cost_price', className: 'cell-amount', render: (row) => formatCurrency(row.cost_price) },
+    { key: 'category', label: 'Category', render: (row) => categoryName(row.categoryId) },
+    { key: 'salesPrice', label: 'Sales Price', accessor: 'salesPrice', className: 'cell-amount', render: (row) => formatCurrency(row.salesPrice) },
+    { key: 'cost', label: 'Cost', accessor: 'cost', className: 'cell-amount', render: (row) => formatCurrency(row.cost) },
     { key: 'margin', label: 'Margin %', className: 'cell-amount', render: (row) => {
-      const margin = row.sales_price > 0 ? (((row.sales_price - row.cost_price) / row.sales_price) * 100).toFixed(1) : '0.0';
+      const margin = row.salesPrice > 0 ? (((row.salesPrice - row.cost) / row.salesPrice) * 100).toFixed(1) : '0.0';
       return <span style={{ color: margin > 0 ? 'var(--color-success)' : 'var(--color-destructive)' }}>{margin}%</span>;
     }},
-    { key: 'actions', label: '', sortable: false, width: '80px', render: (row) => (
-      <button className="btn btn-sm btn-ghost" onClick={(e) => { e.stopPropagation(); navigate(`/products/${row.id}`); }}>Edit</button>
+    { key: 'actions', label: '', sortable: false, width: '120px', render: (row) => (
+      <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+        <button className="btn btn-sm btn-ghost" onClick={(e) => { e.stopPropagation(); navigate(`/products/${row.id}`); }}>Edit</button>
+        {isAdmin && <button className="btn btn-sm btn-ghost" onClick={(e) => handleDelete(e, row.id)} aria-label="Delete"><Trash2 size={14} /></button>}
+      </div>
     )},
   ];
 
@@ -39,9 +57,9 @@ export default function ProductList() {
         <span className={`type-badge ${product.type.toLowerCase()}`}>{product.type}</span>
       </div>
       <div className="kanban-card-body">
-        <div className="card-row"><span>Sales Price</span><span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{formatCurrency(product.sales_price)}</span></div>
-        <div className="card-row"><span>Cost Price</span><span style={{ fontFamily: 'var(--font-mono)' }}>{formatCurrency(product.cost_price)}</span></div>
-        <div className="card-row"><span>Category</span><span>{product.category}</span></div>
+        <div className="card-row"><span>Sales Price</span><span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{formatCurrency(product.salesPrice)}</span></div>
+        <div className="card-row"><span>Cost</span><span style={{ fontFamily: 'var(--font-mono)' }}>{formatCurrency(product.cost)}</span></div>
+        <div className="card-row"><span>Category</span><span>{categoryName(product.categoryId)}</span></div>
       </div>
     </div>
   );
@@ -50,7 +68,7 @@ export default function ProductList() {
     <>
       <button className={`filter-chip ${catFilter === '' ? 'active' : ''}`} onClick={() => setCatFilter('')}>All</button>
       {categories.map(c => (
-        <button key={c} className={`filter-chip ${catFilter === c ? 'active' : ''}`} onClick={() => setCatFilter(c)}>{c}</button>
+        <button key={c.id} className={`filter-chip ${catFilter === String(c.id) ? 'active' : ''}`} onClick={() => setCatFilter(String(c.id))}>{c.name}</button>
       ))}
     </>
   );

@@ -1,134 +1,150 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import AppLayout from '../layout/AppLayout';
+import ProtectedRoute from '../components/ProtectedRoute';
+import PageLoader from '../components/PageLoader';
+import { ROLES, INTERNAL_ROLES } from '../constants/roles';
 
 // Auth
-import Login from '../pages/auth/Login';
-import SignUp from '../pages/auth/SignUp';
-import CreateUser from '../pages/auth/CreateUser';
+const Login = lazy(() => import('../pages/auth/Login'));
+const SignUp = lazy(() => import('../pages/auth/SignUp'));
+const CreateUser = lazy(() => import('../pages/auth/CreateUser'));
 
 // Dashboard
-import Dashboard from '../pages/Dashboard';
+const Dashboard = lazy(() => import('../pages/Dashboard'));
 
 // Contacts
-import ContactList from '../pages/contacts/ContactList';
-import ContactForm from '../pages/contacts/ContactForm';
+const ContactList = lazy(() => import('../pages/contacts/ContactList'));
+const ContactForm = lazy(() => import('../pages/contacts/ContactForm'));
 
 // Products
-import ProductList from '../pages/products/ProductList';
-import ProductForm from '../pages/products/ProductForm';
+const ProductList = lazy(() => import('../pages/products/ProductList'));
+const ProductForm = lazy(() => import('../pages/products/ProductForm'));
+const ProductCategoryList = lazy(() => import('../pages/products/ProductCategoryList'));
 
 // Purchase
-import PurchaseOrderList from '../pages/purchase/PurchaseOrderList';
-import PurchaseOrderForm from '../pages/purchase/PurchaseOrderForm';
-import VendorBillList from '../pages/purchase/VendorBillList';
-import VendorBillForm from '../pages/purchase/VendorBillForm';
-import BillPaymentList from '../pages/purchase/BillPaymentList';
-import BillPaymentForm from '../pages/purchase/BillPaymentForm';
+const PurchaseOrderList = lazy(() => import('../pages/purchase/PurchaseOrderList'));
+const PurchaseOrderForm = lazy(() => import('../pages/purchase/PurchaseOrderForm'));
+const VendorBillList = lazy(() => import('../pages/purchase/VendorBillList'));
+const VendorBillForm = lazy(() => import('../pages/purchase/VendorBillForm'));
+const BillPaymentList = lazy(() => import('../pages/purchase/BillPaymentList'));
+const BillPaymentForm = lazy(() => import('../pages/purchase/BillPaymentForm'));
 
 // Sales
-import SalesOrderList from '../pages/sales/SalesOrderList';
-import SalesOrderForm from '../pages/sales/SalesOrderForm';
-import CustomerInvoiceList from '../pages/sales/CustomerInvoiceList';
-import CustomerInvoiceForm from '../pages/sales/CustomerInvoiceForm';
-import InvoicePaymentList from '../pages/sales/InvoicePaymentList';
-import InvoicePaymentForm from '../pages/sales/InvoicePaymentForm';
+const SalesOrderList = lazy(() => import('../pages/sales/SalesOrderList'));
+const SalesOrderForm = lazy(() => import('../pages/sales/SalesOrderForm'));
+const CustomerInvoiceList = lazy(() => import('../pages/sales/CustomerInvoiceList'));
+const CustomerInvoiceForm = lazy(() => import('../pages/sales/CustomerInvoiceForm'));
+const InvoicePaymentList = lazy(() => import('../pages/sales/InvoicePaymentList'));
+const InvoicePaymentForm = lazy(() => import('../pages/sales/InvoicePaymentForm'));
 
 // Accounting
-import ChartOfAccounts from '../pages/accounting/ChartOfAccounts';
-import Journals from '../pages/accounting/Journals';
-import JournalEntryList from '../pages/accounting/JournalEntryList';
-import JournalEntryForm from '../pages/accounting/JournalEntryForm';
+const ChartOfAccounts = lazy(() => import('../pages/accounting/ChartOfAccounts'));
+const Journals = lazy(() => import('../pages/accounting/Journals'));
+const JournalEntryList = lazy(() => import('../pages/accounting/JournalEntryList'));
+const JournalEntryForm = lazy(() => import('../pages/accounting/JournalEntryForm'));
 
 // Analytics & Budget
-import AnalyticAccountList from '../pages/analytics/AnalyticAccountList';
-import AnalyticAccountForm from '../pages/analytics/AnalyticAccountForm';
-import BudgetList from '../pages/budget/BudgetList';
-import BudgetForm from '../pages/budget/BudgetForm';
-import BudgetReport from '../pages/budget/BudgetReport';
+const AnalyticAccountList = lazy(() => import('../pages/analytics/AnalyticAccountList'));
+const AnalyticAccountForm = lazy(() => import('../pages/analytics/AnalyticAccountForm'));
+const BudgetList = lazy(() => import('../pages/budget/BudgetList'));
+const BudgetForm = lazy(() => import('../pages/budget/BudgetForm'));
+const BudgetReport = lazy(() => import('../pages/budget/BudgetReport'));
 
 // Reports
-import ProfitAndLoss from '../pages/reports/ProfitAndLoss';
-import BalanceSheet from '../pages/reports/BalanceSheet';
+const ProfitAndLoss = lazy(() => import('../pages/reports/ProfitAndLoss'));
+const BalanceSheet = lazy(() => import('../pages/reports/BalanceSheet'));
 
 // Portal
-import PortalDashboard from '../pages/portal/PortalDashboard';
-import PortalInvoiceList from '../pages/portal/PortalInvoiceList';
-import PortalBillList from '../pages/portal/PortalBillList';
-import PortalPaymentForm from '../pages/portal/PortalPaymentForm';
-import PortalStatement from '../pages/portal/PortalStatement';
+const PortalDashboard = lazy(() => import('../pages/portal/PortalDashboard'));
+const PortalInvoiceList = lazy(() => import('../pages/portal/PortalInvoiceList'));
+const PortalBillList = lazy(() => import('../pages/portal/PortalBillList'));
+const PortalPaymentForm = lazy(() => import('../pages/portal/PortalPaymentForm'));
+const PortalStatement = lazy(() => import('../pages/portal/PortalStatement'));
+
+function Internal({ children }) {
+  return <ProtectedRoute roles={INTERNAL_ROLES}>{children}</ProtectedRoute>;
+}
+
+function Portal({ children }) {
+  return <ProtectedRoute roles={[ROLES.USER]}>{children}</ProtectedRoute>;
+}
 
 export default function AppRoutes() {
   return (
-    <Routes>
-      {/* Auth pages (no layout shell) */}
-      <Route path="/auth/login" element={<Login />} />
-      <Route path="/auth/signup" element={<SignUp />} />
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        {/* Auth pages (no layout shell) */}
+        <Route path="/auth/login" element={<Login />} />
+        <Route path="/auth/signup" element={<SignUp />} />
 
-      {/* Main app with layout */}
-      <Route element={<AppLayout />}>
-        {/* Dashboard */}
-        <Route path="/" element={<Dashboard />} />
+        {/* Main app with layout */}
+        <Route element={<AppLayout />}>
+          {/* Dashboard */}
+          <Route path="/" element={<Internal><Dashboard /></Internal>} />
 
-        {/* User Management */}
-        <Route path="/auth/create-user" element={<CreateUser />} />
+          {/* User Management */}
+          <Route path="/auth/create-user" element={<ProtectedRoute roles={[ROLES.ADMIN]}><CreateUser /></ProtectedRoute>} />
 
-        {/* Contacts */}
-        <Route path="/contacts" element={<ContactList />} />
-        <Route path="/contacts/new" element={<ContactForm />} />
-        <Route path="/contacts/:id" element={<ContactForm />} />
+          {/* Contacts */}
+          <Route path="/contacts" element={<Internal><ContactList /></Internal>} />
+          <Route path="/contacts/new" element={<Internal><ContactForm /></Internal>} />
+          <Route path="/contacts/:id" element={<Internal><ContactForm /></Internal>} />
 
-        {/* Products */}
-        <Route path="/products" element={<ProductList />} />
-        <Route path="/products/new" element={<ProductForm />} />
-        <Route path="/products/:id" element={<ProductForm />} />
+          {/* Products */}
+          <Route path="/products" element={<Internal><ProductList /></Internal>} />
+          <Route path="/products/categories" element={<Internal><ProductCategoryList /></Internal>} />
+          <Route path="/products/new" element={<Internal><ProductForm /></Internal>} />
+          <Route path="/products/:id" element={<Internal><ProductForm /></Internal>} />
 
-        {/* Purchase */}
-        <Route path="/purchase/orders" element={<PurchaseOrderList />} />
-        <Route path="/purchase/orders/new" element={<PurchaseOrderForm />} />
-        <Route path="/purchase/orders/:id" element={<PurchaseOrderForm />} />
-        <Route path="/purchase/bills" element={<VendorBillList />} />
-        <Route path="/purchase/bills/:id" element={<VendorBillForm />} />
-        <Route path="/purchase/payments" element={<BillPaymentList />} />
-        <Route path="/purchase/payments/new" element={<BillPaymentForm />} />
+          {/* Purchase */}
+          <Route path="/purchase/orders" element={<Internal><PurchaseOrderList /></Internal>} />
+          <Route path="/purchase/orders/new" element={<Internal><PurchaseOrderForm /></Internal>} />
+          <Route path="/purchase/orders/:id" element={<Internal><PurchaseOrderForm /></Internal>} />
+          <Route path="/purchase/bills" element={<Internal><VendorBillList /></Internal>} />
+          <Route path="/purchase/bills/:id" element={<Internal><VendorBillForm /></Internal>} />
+          <Route path="/purchase/payments" element={<Internal><BillPaymentList /></Internal>} />
+          <Route path="/purchase/payments/new" element={<Internal><BillPaymentForm /></Internal>} />
 
-        {/* Sales */}
-        <Route path="/sales/orders" element={<SalesOrderList />} />
-        <Route path="/sales/orders/new" element={<SalesOrderForm />} />
-        <Route path="/sales/orders/:id" element={<SalesOrderForm />} />
-        <Route path="/sales/invoices" element={<CustomerInvoiceList />} />
-        <Route path="/sales/invoices/:id" element={<CustomerInvoiceForm />} />
-        <Route path="/sales/payments" element={<InvoicePaymentList />} />
-        <Route path="/sales/payments/new" element={<InvoicePaymentForm />} />
+          {/* Sales */}
+          <Route path="/sales/orders" element={<Internal><SalesOrderList /></Internal>} />
+          <Route path="/sales/orders/new" element={<Internal><SalesOrderForm /></Internal>} />
+          <Route path="/sales/orders/:id" element={<Internal><SalesOrderForm /></Internal>} />
+          <Route path="/sales/invoices" element={<Internal><CustomerInvoiceList /></Internal>} />
+          <Route path="/sales/invoices/:id" element={<Internal><CustomerInvoiceForm /></Internal>} />
+          <Route path="/sales/payments" element={<Internal><InvoicePaymentList /></Internal>} />
+          <Route path="/sales/payments/new" element={<Internal><InvoicePaymentForm /></Internal>} />
 
-        {/* Accounting */}
-        <Route path="/accounting/chart" element={<ChartOfAccounts />} />
-        <Route path="/accounting/journals" element={<Journals />} />
-        <Route path="/accounting/entries" element={<JournalEntryList />} />
-        <Route path="/accounting/entries/new" element={<JournalEntryForm />} />
-        <Route path="/accounting/entries/:id" element={<JournalEntryForm />} />
+          {/* Accounting */}
+          <Route path="/accounting/chart" element={<Internal><ChartOfAccounts /></Internal>} />
+          <Route path="/accounting/journals" element={<Internal><Journals /></Internal>} />
+          <Route path="/accounting/entries" element={<Internal><JournalEntryList /></Internal>} />
+          <Route path="/accounting/entries/new" element={<Internal><JournalEntryForm /></Internal>} />
+          <Route path="/accounting/entries/:id" element={<Internal><JournalEntryForm /></Internal>} />
 
-        {/* Analytics */}
-        <Route path="/analytics" element={<AnalyticAccountList />} />
-        <Route path="/analytics/new" element={<AnalyticAccountForm />} />
-        <Route path="/analytics/:id" element={<AnalyticAccountForm />} />
+          {/* Analytics */}
+          <Route path="/analytics" element={<Internal><AnalyticAccountList /></Internal>} />
+          <Route path="/analytics/new" element={<Internal><AnalyticAccountForm /></Internal>} />
+          <Route path="/analytics/:id" element={<Internal><AnalyticAccountForm /></Internal>} />
 
-        {/* Budget */}
-        <Route path="/budgets" element={<BudgetList />} />
-        <Route path="/budgets/new" element={<BudgetForm />} />
-        <Route path="/budgets/:id" element={<BudgetForm />} />
+          {/* Budget */}
+          <Route path="/budgets" element={<Internal><BudgetList /></Internal>} />
+          <Route path="/budgets/new" element={<Internal><BudgetForm /></Internal>} />
+          <Route path="/budgets/:id" element={<Internal><BudgetForm /></Internal>} />
 
-        {/* Reports */}
-        <Route path="/reports/profit-loss" element={<ProfitAndLoss />} />
-        <Route path="/reports/balance-sheet" element={<BalanceSheet />} />
-        <Route path="/reports/budget" element={<BudgetReport />} />
+          {/* Reports */}
+          <Route path="/reports/profit-loss" element={<Internal><ProfitAndLoss /></Internal>} />
+          <Route path="/reports/balance-sheet" element={<Internal><BalanceSheet /></Internal>} />
+          <Route path="/reports/budget" element={<Internal><BudgetReport /></Internal>} />
 
-        {/* Portal */}
-        <Route path="/portal" element={<PortalDashboard />} />
-        <Route path="/portal/invoices" element={<PortalInvoiceList />} />
-        <Route path="/portal/bills" element={<PortalBillList />} />
-        <Route path="/portal/payment" element={<PortalPaymentForm />} />
-        <Route path="/portal/statement" element={<PortalStatement />} />
-      </Route>
-    </Routes>
+          {/* Portal */}
+          <Route path="/portal" element={<Portal><PortalDashboard /></Portal>} />
+          <Route path="/portal/invoices" element={<Portal><PortalInvoiceList /></Portal>} />
+          <Route path="/portal/bills" element={<Portal><PortalBillList /></Portal>} />
+          <Route path="/portal/payment" element={<Portal><PortalPaymentForm /></Portal>} />
+          <Route path="/portal/statement" element={<Portal><PortalStatement /></Portal>} />
+        </Route>
+      </Routes>
+    </Suspense>
   );
 }

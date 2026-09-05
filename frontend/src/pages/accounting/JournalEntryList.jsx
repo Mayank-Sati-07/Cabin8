@@ -3,20 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import DataTable from '../../components/DataTable';
 import StatusBadge from '../../components/StatusBadge';
-import { accountingApi } from '../../api';
+import { journalEntriesApi } from '../../api';
 import { formatCurrency } from '../../utils/currency';
 
 export default function JournalEntryList() {
   const [entries, setEntries] = useState([]);
   const navigate = useNavigate();
-  useEffect(() => { accountingApi.getJournalEntries().then(setEntries); }, []);
+  useEffect(() => { journalEntriesApi.getAll().then(setEntries); }, []);
 
   const columns = [
-    { key: 'number', label: 'Entry #', accessor: 'entry_number', render: (r) => <strong style={{ fontFamily: 'var(--font-mono)' }}>{r.entry_number}</strong> },
-    { key: 'date', label: 'Date', accessor: 'date' },
+    { key: 'id', label: 'Entry #', render: (r) => <strong style={{ fontFamily: 'var(--font-mono)' }}>JE-{r.id}</strong> },
+    { key: 'journal', label: 'Journal', render: (r) => r.journal?.name || '—' },
+    { key: 'date', label: 'Date', render: (r) => new Date(r.accountingDate).toLocaleDateString() },
     { key: 'reference', label: 'Reference', accessor: 'reference' },
     { key: 'total', label: 'Total', className: 'cell-amount', render: (r) => formatCurrency(r.items?.reduce((s, i) => s + i.debit, 0) || 0) },
-    { key: 'state', label: 'Status', accessor: 'state', render: (r) => <StatusBadge status={r.state} /> },
+    { key: 'status', label: 'Status', accessor: 'status', render: (r) => <StatusBadge status={r.status} /> },
   ];
 
   return (

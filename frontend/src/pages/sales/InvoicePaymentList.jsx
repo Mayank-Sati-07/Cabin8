@@ -1,18 +1,18 @@
 import { useState, useEffect } from 'react';
 import DataTable from '../../components/DataTable';
-import { salesApi, contactsApi } from '../../api';
+import { paymentsApi } from '../../api';
 import { formatCurrency } from '../../utils/currency';
 
 export default function InvoicePaymentList() {
   const [payments, setPayments] = useState([]);
-  const [contacts, setContacts] = useState([]);
-  useEffect(() => { Promise.all([salesApi.getPayments(), contactsApi.getAll()]).then(([p, c]) => { setPayments(p); setContacts(c); }); }, []);
+  useEffect(() => { paymentsApi.getAll('RECEIVE').then(setPayments); }, []);
 
   const columns = [
-    { key: 'date', label: 'Date', accessor: 'date' },
-    { key: 'customer', label: 'Customer', render: (r) => contacts.find(c => c.id === r.partner_id)?.name || '—' },
+    { key: 'date', label: 'Date', render: (r) => new Date(r.date).toLocaleDateString() },
+    { key: 'customer', label: 'Customer', render: (r) => r.partner?.name || '—' },
     { key: 'amount', label: 'Amount', className: 'cell-amount', render: (r) => formatCurrency(r.amount) },
-    { key: 'ref', label: 'Reference', accessor: 'reference' },
+    { key: 'method', label: 'Method', accessor: 'method' },
+    { key: 'note', label: 'Note', accessor: 'note' },
   ];
 
   return (
