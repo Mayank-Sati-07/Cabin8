@@ -151,24 +151,6 @@ def generate_random_ledger(num_purchases=4, num_sales=4):
 # Run generator
 generate_random_ledger(num_purchases=4, num_sales=4)
 
-# 3. AI Cache Data
-ai_cache = {
-    "scanned_bill_sample": {
-        "vendor_name": "Azure Furniture",
-        "invoice_date": "2026-09-01",
-        "due_date": "2026-09-15",
-        "line_items": [
-            {"product_name": "Wooden Chair", "quantity": 5, "unit_price": 1200.0, "subtotal": 6000.0},
-            {"product_name": "Wooden Table", "quantity": 2, "unit_price": 4000.0, "subtotal": 8000.0}
-        ],
-        "total_amount": 14000.0
-    },
-    "report_insights_sample": {
-        "generated_at": days_ago(0),
-        "cfo_summary": "Cabin8 maintains a strong cash position with automated double-entry ledger verification. Open receivables and payables are appropriately tracked across active vendor and customer accounts."
-    }
-}
-
 # 4. Final Payload Assembly
 seed_db = {
     "users": users,
