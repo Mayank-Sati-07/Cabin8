@@ -1,11 +1,17 @@
 import { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, Navigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
+import { useAuth } from '../hooks/useAuth';
 
 export default function AppLayout() {
+  const { user } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  if (!user) {
+    return <Navigate to="/auth/login" replace />;
+  }
 
   const toggleSidebar = () => setSidebarCollapsed(prev => !prev);
   const toggleMobile = () => setMobileOpen(prev => !prev);

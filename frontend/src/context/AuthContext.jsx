@@ -13,7 +13,7 @@ const DEFAULT_USER = {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('uf_user');
-    return saved ? JSON.parse(saved) : DEFAULT_USER;
+    return saved ? JSON.parse(saved) : null;
   });
 
   const [theme, setTheme] = useState(() => {
@@ -26,7 +26,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(() => {
-    setUser(DEFAULT_USER);
+    setUser(null);
     localStorage.removeItem('uf_user');
   }, []);
 
