@@ -13,6 +13,8 @@ const budgetEngine = require('./modules/budgetEngine');
 const reports = require('./modules/reports');
 const portal = require('./modules/portal');
 const ai = require('./modules/ai');
+const search = require('./modules/search');
+const notifications = require('./modules/notifications');
 
 const router = express.Router();
 
@@ -36,5 +38,7 @@ router.use('/budgets', budgetEngine);
 router.use('/reports', reports);
 router.use('/portal', portal);
 router.use('/ai', ai);
+router.use('/search', search);
+router.use('/notifications', notifications);
 
 module.exports = router;

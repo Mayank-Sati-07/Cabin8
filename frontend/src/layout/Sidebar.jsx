@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Users, Package, ShoppingCart, FileText,
   BookOpen, PieChart, Wallet, TrendingUp, Calculator,
@@ -7,6 +8,9 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { usePermission } from '../hooks/usePermission';
 import { ROLE_LABELS } from '../constants/roles';
+import Logo from '../components/Logo';
+
+const MotionNavLink = motion.create(NavLink);
 
 const internalGroups = [
   {
@@ -92,7 +96,7 @@ export default function Sidebar({ collapsed, mobileOpen }) {
   return (
     <aside className={`app-sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
       <div className="sidebar-logo">
-        <div className="logo-icon">C8</div>
+        <Logo className="logo-icon" size={32} />
         <span>Cabin8</span>
       </div>
 
@@ -101,15 +105,29 @@ export default function Sidebar({ collapsed, mobileOpen }) {
           <div className="sidebar-group" key={group.label}>
             <div className="sidebar-group-label">{group.label}</div>
             {group.items.map(item => (
-              <NavLink
+              <MotionNavLink
                 key={item.to}
                 to={item.to}
                 end={item.to === '/' || item.to === '/portal'}
                 className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+                whileHover={{ x: 3 }}
+                whileTap={{ scale: 0.97 }}
+                transition={{ type: 'tween', duration: 0.15, ease: 'easeOut' }}
               >
-                <item.icon size={20} />
-                <span>{item.label}</span>
-              </NavLink>
+                {({ isActive }) => (
+                  <>
+                    {isActive && (
+                      <motion.span
+                        className="sidebar-active-pill"
+                        layoutId="sidebar-active-pill"
+                        transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                      />
+                    )}
+                    <item.icon size={20} />
+                    <span className="sidebar-link-label">{item.label}</span>
+                  </>
+                )}
+              </MotionNavLink>
             ))}
           </div>
         ))}

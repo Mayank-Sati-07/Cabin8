@@ -131,3 +131,11 @@ export const portalApi = {
 export const aiApi = {
   extractInvoice: (file) => api.postFile('/ai/extract-invoice', file),
 };
+
+export const searchApi = {
+  search: (q) => api.get('/search', { q }),
+};
+
+export const notificationsApi = {
+  getAll: () => api.get('/notifications'),
+};

@@ -23,9 +23,38 @@ function fuzzyFind(list, name, getName) {
   }) || null;
 }
 
+function slugify(name) {
+  return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'vendor';
+}
+
+// Contact.email is required + unique, but the AI extraction has no vendor
+// email — synthesize a stable placeholder and disambiguate on collision.
+async function createVendor(vendorName) {
+  const base = slugify(vendorName);
+  let email = `${base}@vendor.cabin8.local`;
+
+  if (await prisma.contact.findUnique({ where: { email } })) {
+    email = `${base}-${Date.now()}@vendor.cabin8.local`;
+  }
+
+  return prisma.contact.create({ data: { name: vendorName, email } });
+}
+
+// We only know the price we're being charged (cost), not what we'd resell
+// it for — default salesPrice to cost so the record is usable immediately,
+// with an obvious zero-margin the user can correct on the Products page.
+async function createProduct(item) {
+  const price = item.unit_price ?? 0;
+  return prisma.product.create({
+    data: { name: item.name, type: 'GOODS', salesPrice: price, cost: price },
+  });
+}
+
 // POST /ai/extract-invoice — proxies a document to the Python AI service,
 // then matches the extracted vendor/line items against real Contacts and
-// Products so the frontend can prefill a Purchase Order directly.
+// Products. Anything that doesn't match an existing record is created
+// automatically (pass ?autoCreate=false to only match, never create) so
+// the frontend can prefill a Purchase Order directly with no manual lookup.
 router.post('/extract-invoice', authenticate, authorize(['ADMIN', 'ACCOUNTANT']), upload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
@@ -47,23 +76,39 @@ router.post('/extract-invoice', authenticate, authorize(['ADMIN', 'ACCOUNTANT'])
     }
 
     const invoice = aiData.invoice || {};
-    const [contacts, products] = await Promise.all([
-      prisma.contact.findMany(),
-      prisma.product.findMany(),
-    ]);
+    const autoCreate = req.query.autoCreate !== 'false';
 
-    const vendor = fuzzyFind(contacts, invoice.vendor_name, c => c.name);
+    const contacts = await prisma.contact.findMany();
+    const products = await prisma.product.findMany();
 
-    const lines = (invoice.items || []).map(item => {
-      const match = fuzzyFind(products, item.name, p => p.name);
-      return {
-        productId: match ? match.id : null,
-        matchedProductName: match ? match.name : null,
+    let vendor = fuzzyFind(contacts, invoice.vendor_name, c => c.name);
+    let vendorCreated = false;
+
+    if (!vendor && autoCreate && invoice.vendor_name) {
+      vendor = await createVendor(invoice.vendor_name);
+      vendorCreated = true;
+    }
+
+    const lines = [];
+    for (const item of (invoice.items || [])) {
+      let product = fuzzyFind(products, item.name, p => p.name);
+      let created = false;
+
+      if (!product && autoCreate && item.name) {
+        product = await createProduct(item);
+        created = true;
+        products.push(product); // reuse it if the invoice repeats this item name
+      }
+
+      lines.push({
+        productId: product ? product.id : null,
+        matchedProductName: product ? product.name : null,
+        productCreated: created,
         extractedName: item.name,
         qty: item.quantity ?? 1,
         unitPrice: item.unit_price ?? 0,
-      };
-    });
+      });
+    }
 
     res.json({
       invoice,
@@ -71,7 +116,9 @@ router.post('/extract-invoice', authenticate, authorize(['ADMIN', 'ACCOUNTANT'])
       matched: {
         vendorId: vendor ? vendor.id : null,
         vendorName: vendor ? vendor.name : null,
+        vendorCreated,
         lines,
+        createdProductCount: lines.filter(l => l.productCreated).length,
         unmatchedCount: lines.filter(l => !l.productId).length,
       },
     });

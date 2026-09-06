@@ -4,6 +4,16 @@ const { authenticate, authorize } = require('../middleware/rbac');
 
 const router = express.Router();
 
+// A date-only string like "2026-09-05" parses to midnight UTC. Used as an
+// inclusive upper bound that excludes anything posted later that same day —
+// entries carry a full timestamp, not just a date. Push the bound to the
+// last instant of the day so "as of today" actually includes today.
+function endOfDay(dateStr) {
+  const d = new Date(dateStr);
+  d.setUTCHours(23, 59, 59, 999);
+  return d;
+}
+
 async function getAccountBreakdown(types, startDate, endDate) {
   const accounts = await prisma.account.findMany({
     where: { type: { in: types } },
@@ -13,7 +23,7 @@ async function getAccountBreakdown(types, startDate, endDate) {
           entry: {
             status: 'POSTED',
             ...(startDate && endDate && {
-              accountingDate: { gte: new Date(startDate), lte: new Date(endDate) }
+              accountingDate: { gte: new Date(startDate), lte: endOfDay(endDate) }
             })
           }
         },
@@ -72,34 +82,22 @@ router.get('/balance-sheet', authenticate, authorize(['ADMIN', 'ACCOUNTANT']), a
   try {
     const asOfDate = req.query.asOfDate || new Date().toISOString().split('T')[0];
 
-    const [assetAccountsRaw, liabilityAccountsRaw, capitalAccountsRaw] = await Promise.all([
-      prisma.account.findMany({
-        where: { type: { in: ['ASSET', 'BANK', 'CASH'] } },
-        include: {
-          journalItems: {
-            where: { entry: { status: 'POSTED', accountingDate: { lte: new Date(asOfDate) } } },
-            select: { debit: true, credit: true }
-          }
+    const journalItemsUpTo = (types) => prisma.account.findMany({
+      where: { type: { in: types } },
+      include: {
+        journalItems: {
+          where: { entry: { status: 'POSTED', accountingDate: { lte: endOfDay(asOfDate) } } },
+          select: { debit: true, credit: true }
         }
-      }),
-      prisma.account.findMany({
-        where: { type: { in: ['LIABILITY'] } },
-        include: {
-          journalItems: {
-            where: { entry: { status: 'POSTED', accountingDate: { lte: new Date(asOfDate) } } },
-            select: { debit: true, credit: true }
-          }
-        }
-      }),
-      prisma.account.findMany({
-        where: { type: { in: ['CAPITAL'] } },
-        include: {
-          journalItems: {
-            where: { entry: { status: 'POSTED', accountingDate: { lte: new Date(asOfDate) } } },
-            select: { debit: true, credit: true }
-          }
-        }
-      })
+      }
+    });
+
+    const [assetAccountsRaw, liabilityAccountsRaw, capitalAccountsRaw, incomeAccountsRaw, expenseAccountsRaw] = await Promise.all([
+      journalItemsUpTo(['ASSET', 'BANK', 'CASH']),
+      journalItemsUpTo(['LIABILITY']),
+      journalItemsUpTo(['CAPITAL']),
+      journalItemsUpTo(['INCOME']),
+      journalItemsUpTo(['EXPENSE', 'OTHER_EXPENSE'])
     ]);
 
     function mapAccounts(accounts) {
@@ -114,15 +112,26 @@ router.get('/balance-sheet', authenticate, authorize(['ADMIN', 'ACCOUNTANT']), a
     const liabilities = mapAccounts(liabilityAccountsRaw);
     const capital     = mapAccounts(capitalAccountsRaw);
 
+    // Income/expense accounts don't get closed into Capital by any journal
+    // entry in this system, so the accounting equation (Assets = Liabilities
+    // + Capital) only holds once retained earnings-to-date are folded in here.
+    const netProfitToDate = -mapAccounts(incomeAccountsRaw).reduce((s, a) => s + a.balance, 0)
+                           - mapAccounts(expenseAccountsRaw).reduce((s, a) => s + a.balance, 0);
+
+    const capitalLines = capital.map(a => ({ ...a, balance: -a.balance }));
+    if (Math.abs(netProfitToDate) > 0.001) {
+      capitalLines.push({ id: null, name: 'Retained Earnings (Net Profit)', type: 'CAPITAL', balance: netProfitToDate });
+    }
+
     const totalAssets      = assets.reduce((s, a)      => s + a.balance,  0);
     const totalLiabilities = liabilities.reduce((s, a) => s + (-a.balance), 0);
-    const totalCapital     = capital.reduce((s, a)     => s + (-a.balance), 0);
+    const totalCapital     = capitalLines.reduce((s, a) => s + a.balance,  0);
 
     res.json({
       asOfDate,
-      assets:      { accounts: assets,                                           total: totalAssets },
+      assets:      { accounts: assets,                                              total: totalAssets },
       liabilities: { accounts: liabilities.map(a => ({ ...a, balance: -a.balance })), total: totalLiabilities },
-      capital:     { accounts: capital.map(a => ({ ...a, balance: -a.balance })),      total: totalCapital },
+      capital:     { accounts: capitalLines,                                         total: totalCapital },
       balanced: Math.abs(totalAssets - (totalLiabilities + totalCapital)) < 0.001
     });
   } catch (err) {

@@ -1,4 +1,4 @@
-import { createContext, useState, useCallback } from 'react';
+import { createContext, useState, useCallback, useEffect } from 'react';
 import { setSession, clearSession } from '../api/client';
 
 export const AuthContext = createContext(null);
@@ -17,6 +17,10 @@ export function AuthProvider({ children }) {
     return localStorage.getItem('uf_theme') || 'light';
   });
 
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
   const login = useCallback((userData, token) => {
     setUser(userData);
     setSession(token, userData);
@@ -31,7 +35,6 @@ export function AuthProvider({ children }) {
     setTheme(prev => {
       const next = prev === 'light' ? 'dark' : 'light';
       localStorage.setItem('uf_theme', next);
-      document.documentElement.setAttribute('data-theme', next);
       return next;
     });
   }, []);

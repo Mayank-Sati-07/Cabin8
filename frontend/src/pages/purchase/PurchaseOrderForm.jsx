@@ -75,6 +75,15 @@ export default function PurchaseOrderForm() {
       const result = await aiApi.extractInvoice(file);
       const { invoice, matched } = result;
 
+      // New vendor/products were created server-side if they didn't already
+      // exist — refresh the local lists so their names show up in the
+      // dropdowns instead of a blank selection.
+      if (matched.vendorCreated || matched.createdProductCount > 0) {
+        const [freshContacts, freshProducts] = await Promise.all([contactsApi.getAll(), productsApi.getAll()]);
+        setContacts(freshContacts);
+        setProducts(freshProducts);
+      }
+
       setForm(f => ({
         ...f,
         vendorId: matched.vendorId ? String(matched.vendorId) : f.vendorId,
@@ -89,8 +98,12 @@ export default function PurchaseOrderForm() {
       }));
 
       const messages = [];
-      messages.push(matched.vendorId ? `Vendor matched: ${matched.vendorName}.` : invoice.vendor_name ? `Vendor "${invoice.vendor_name}" not found — please select one.` : 'No vendor detected.');
-      if (matched.unmatchedCount > 0) messages.push(`${matched.unmatchedCount} line item(s) need a product selected manually.`);
+      if (matched.vendorCreated) messages.push(`New vendor created: "${matched.vendorName}".`);
+      else if (matched.vendorId) messages.push(`Vendor matched: ${matched.vendorName}.`);
+      else messages.push('No vendor detected.');
+
+      if (matched.createdProductCount > 0) messages.push(`${matched.createdProductCount} new product(s) auto-created — review their sales price on the Products page.`);
+      if (matched.unmatchedCount > 0) messages.push(`${matched.unmatchedCount} line item(s) still need a product selected manually.`);
       setInfo(messages.join(' '));
     } catch (err) {
       setError(err.message || 'Could not extract invoice data');

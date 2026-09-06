@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import AppLayout from '../layout/AppLayout';
 import ProtectedRoute from '../components/ProtectedRoute';
-import PageLoader from '../components/PageLoader';
+import LoadingScreen from '../components/LoadingScreen';
 import { ROLES, INTERNAL_ROLES } from '../constants/roles';
 
 // Auth
@@ -72,7 +72,7 @@ function Portal({ children }) {
 
 export default function AppRoutes() {
   return (
-    <Suspense fallback={<PageLoader />}>
+    <Suspense fallback={<LoadingScreen />}>
       <Routes>
         {/* Auth pages (no layout shell) */}
         <Route path="/auth/login" element={<Login />} />
