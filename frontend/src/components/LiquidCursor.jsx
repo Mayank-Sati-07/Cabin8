@@ -22,6 +22,8 @@ export default function LiquidCursor() {
     const container = containerRef.current;
     const blobs = blobRefs.current;
 
+    document.documentElement.classList.add('liquid-cursor-on');
+
     let mouseX = window.innerWidth / 2;
     let mouseY = window.innerHeight / 2;
     let active = false;
@@ -75,6 +77,7 @@ export default function LiquidCursor() {
 
     return () => {
       cancelAnimationFrame(rafId);
+      document.documentElement.classList.remove('liquid-cursor-on');
       window.removeEventListener('mousemove', handleMove);
       document.documentElement.removeEventListener('mouseleave', deactivate);
       window.removeEventListener('mousedown', handleDown);

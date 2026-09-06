@@ -406,6 +406,13 @@ img, video:not(.bg-video) { max-width: 100%; display: block; }
   }
 }
 
+/* Hide the native OS cursor everywhere while the liquid cursor is running,
+   so it never renders overlaid on top of the custom blobs. */
+html.liquid-cursor-on,
+html.liquid-cursor-on * {
+  cursor: none !important;
+}
+
 /* ── Background Video ──────────────────────────────────────────────────── */
 .bg-video-wrapper {
   /* Each theme has its own clip; only the active one is shown. Both stay

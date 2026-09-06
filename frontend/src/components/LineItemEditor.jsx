@@ -48,7 +48,7 @@ export default function LineItemEditor({ lines, onChange, products = [], analyti
                 <tr key={line.id || idx}>
                   <td>
                     {readOnly ? (
-                      <span>{products.find(p => String(p.id) === String(line.productId))?.name || '—'}</span>
+                      <span>{line.product?.name || products.find(p => String(p.id) === String(line.productId))?.name || '—'}</span>
                     ) : (
                       <select
                         value={line.productId}
@@ -63,7 +63,7 @@ export default function LineItemEditor({ lines, onChange, products = [], analyti
                   </td>
                   <td>
                     {readOnly ? (
-                      <span>{analyticAccounts.find(a => String(a.id) === String(line.analyticAccountId))?.name || '—'}</span>
+                      <span>{line.analyticAccount?.name || analyticAccounts.find(a => String(a.id) === String(line.analyticAccountId))?.name || '—'}</span>
                     ) : (
                       <select
                         value={line.analyticAccountId || ''}
