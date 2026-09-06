@@ -49,11 +49,18 @@ export default function CustomerInvoiceForm() {
           <div className="form-group"><label className="form-label">Due Date</label><input className="form-input" value={invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : '—'} readOnly /></div>
         </div>
         <div className="form-row">
+          <div className="form-group"><label className="form-label">Subtotal</label><input className="form-input" value={formatCurrency(invoice.subTotal)} readOnly /></div>
+          <div className="form-group"><label className="form-label">Tax (GST)</label><input className="form-input" value={formatCurrency(invoice.taxAmount)} readOnly /></div>
           <div className="form-group"><label className="form-label">Total Amount</label><input className="form-input" value={formatCurrency(invoice.totalAmount)} readOnly /></div>
           <div className="form-group"><label className="form-label">Amount Paid</label><input className="form-input" value={formatCurrency(invoice.amountPaid)} readOnly /></div>
         </div>
         <h3 style={{ margin: 'var(--space-5) 0 var(--space-3)' }}>Invoice Lines</h3>
-        <LineItemEditor lines={invoice.lines || []} onChange={() => {}} readOnly />
+        <LineItemEditor
+          lines={invoice.lines || []}
+          onChange={() => {}}
+          readOnly
+          taxSummary={{ subTotal: invoice.subTotal, cgstAmount: invoice.cgstAmount, sgstAmount: invoice.sgstAmount, igstAmount: invoice.igstAmount, totalAmount: invoice.totalAmount }}
+        />
       </div></div>
     </>
   );

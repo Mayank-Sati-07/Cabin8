@@ -139,3 +139,8 @@ export const searchApi = {
 export const notificationsApi = {
   getAll: () => api.get('/notifications'),
 };
+
+export const settingsApi = {
+  get: () => api.get('/settings'),
+  update: (data) => api.put('/settings', data),
+};

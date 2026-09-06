@@ -93,19 +93,27 @@ model User {
   createdAt DateTime @default(now())
 }
 
+// ---------- SETTINGS ----------
+
+model Settings {
+  id           Int     @id @default(1)
+  companyState String  @default("")
+  gstin        String?
+}
+
 // ---------- MASTERS ----------
 
 model Contact {
-  id       Int    @id @default(autoincrement())
-  name     String
-  email    String @unique
-  phone    String?
-  image    String?
-  street   String?
-  city     String?
-  state    String?
-  country  String?
-  pincode  String?
+  id      Int     @id @default(autoincrement())
+  name    String
+  email   String  @unique
+  phone   String?
+  image   String?
+  street  String?
+  city    String?
+  state   String?
+  country String?
+  pincode String?
 
   user               User?
   purchaseOrders     PurchaseOrder[]
@@ -125,19 +133,20 @@ model ProductCategory {
 }
 
 model Product {
-  id         Int             @id @default(autoincrement())
+  id         Int              @id @default(autoincrement())
   name       String
   type       ProductType
   salesPrice Float
   cost       Float
+  gstRate    Float            @default(0)
   image      String?
   categoryId Int?
   category   ProductCategory? @relation(fields: [categoryId], references: [id])
 
-  purchaseOrderLines    PurchaseOrderLine[]
-  vendorBillLines       VendorBillLine[]
-  salesOrderLines       SalesOrderLine[]
-  customerInvoiceLines  CustomerInvoiceLine[]
+  purchaseOrderLines   PurchaseOrderLine[]
+  vendorBillLines      VendorBillLine[]
+  salesOrderLines      SalesOrderLine[]
+  customerInvoiceLines CustomerInvoiceLine[]
 }
 
 model AnalyticAccount {
@@ -197,16 +206,16 @@ model Budget {
 // ---------- PURCHASE ----------
 
 model PurchaseOrder {
-  id        Int       @id @default(autoincrement())
-  poNumber  String    @unique
-  vendorId  Int
-  vendor    Contact   @relation(fields: [vendorId], references: [id])
-  date      DateTime  @default(now())
-  status    DocStatus @default(DRAFT)
+  id       Int       @id @default(autoincrement())
+  poNumber String    @unique
+  vendorId Int
+  vendor   Contact   @relation(fields: [vendorId], references: [id])
+  date     DateTime  @default(now())
+  status   DocStatus @default(DRAFT)
 
   lines       PurchaseOrderLine[]
   vendorBills VendorBill[]
-  createdAt   DateTime @default(now())
+  createdAt   DateTime            @default(now())
 }
 
 model PurchaseOrderLine {
@@ -223,23 +232,28 @@ model PurchaseOrderLine {
 }
 
 model VendorBill {
-  id           Int        @id @default(autoincrement())
-  billNumber   String     @unique
+  id           Int            @id @default(autoincrement())
+  billNumber   String         @unique
   vendorBillNo String?
   vendorId     Int
-  vendor       Contact    @relation(fields: [vendorId], references: [id])
+  vendor       Contact        @relation(fields: [vendorId], references: [id])
   poId         Int?
   po           PurchaseOrder? @relation(fields: [poId], references: [id])
-  billDate     DateTime   @default(now())
+  billDate     DateTime       @default(now())
   dueDate      DateTime?
-  status       BillStatus @default(DRAFT)
-  totalAmount  Float      @default(0)
-  amountPaid   Float      @default(0)
+  status       BillStatus     @default(DRAFT)
+  subTotal     Float          @default(0)
+  cgstAmount   Float          @default(0)
+  sgstAmount   Float          @default(0)
+  igstAmount   Float          @default(0)
+  taxAmount    Float          @default(0)
+  totalAmount  Float          @default(0)
+  amountPaid   Float          @default(0)
 
   lines          VendorBillLine[]
   payments       Payment[]
   journalEntries JournalEntry[]
-  createdAt      DateTime @default(now())
+  createdAt      DateTime         @default(now())
 }
 
 model VendorBillLine {
@@ -255,21 +269,25 @@ model VendorBillLine {
   qty               Float
   unitPrice         Float
   total             Float
+  gstRate           Float            @default(0)
+  cgstAmount        Float            @default(0)
+  sgstAmount        Float            @default(0)
+  igstAmount        Float            @default(0)
 }
 
 // ---------- SALES ----------
 
 model SalesOrder {
-  id       Int       @id @default(autoincrement())
-  soNumber String    @unique
+  id         Int       @id @default(autoincrement())
+  soNumber   String    @unique
   customerId Int
-  customer Contact   @relation(fields: [customerId], references: [id])
-  date     DateTime  @default(now())
-  status   DocStatus @default(DRAFT)
+  customer   Contact   @relation(fields: [customerId], references: [id])
+  date       DateTime  @default(now())
+  status     DocStatus @default(DRAFT)
 
-  lines             SalesOrderLine[]
-  customerInvoices  CustomerInvoice[]
-  createdAt         DateTime @default(now())
+  lines            SalesOrderLine[]
+  customerInvoices CustomerInvoice[]
+  createdAt        DateTime          @default(now())
 }
 
 model SalesOrderLine {
@@ -286,23 +304,28 @@ model SalesOrderLine {
 }
 
 model CustomerInvoice {
-  id            Int        @id @default(autoincrement())
-  invoiceNumber String     @unique
+  id            Int         @id @default(autoincrement())
+  invoiceNumber String      @unique
   invoiceRef    String?
   customerId    Int
-  customer      Contact    @relation(fields: [customerId], references: [id])
+  customer      Contact     @relation(fields: [customerId], references: [id])
   soId          Int?
   so            SalesOrder? @relation(fields: [soId], references: [id])
-  invoiceDate   DateTime   @default(now())
+  invoiceDate   DateTime    @default(now())
   dueDate       DateTime?
-  status        BillStatus @default(DRAFT)
-  totalAmount   Float      @default(0)
-  amountPaid    Float      @default(0)
+  status        BillStatus  @default(DRAFT)
+  subTotal      Float       @default(0)
+  cgstAmount    Float       @default(0)
+  sgstAmount    Float       @default(0)
+  igstAmount    Float       @default(0)
+  taxAmount     Float       @default(0)
+  totalAmount   Float       @default(0)
+  amountPaid    Float       @default(0)
 
   lines          CustomerInvoiceLine[]
   payments       Payment[]
   journalEntries JournalEntry[]
-  createdAt      DateTime @default(now())
+  createdAt      DateTime              @default(now())
 }
 
 model CustomerInvoiceLine {
@@ -318,6 +341,10 @@ model CustomerInvoiceLine {
   qty               Float
   unitPrice         Float
   total             Float
+  gstRate           Float            @default(0)
+  cgstAmount        Float            @default(0)
+  sgstAmount        Float            @default(0)
+  igstAmount        Float            @default(0)
 }
 
 // ---------- PAYMENT ----------
@@ -358,7 +385,7 @@ model JournalEntry {
   invoice   CustomerInvoice? @relation(fields: [invoiceId], references: [id])
 
   items     JournalItem[]
-  createdAt DateTime @default(now())
+  createdAt DateTime      @default(now())
 }
 
 model JournalItem {

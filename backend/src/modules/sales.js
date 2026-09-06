@@ -3,6 +3,7 @@ const prisma = require('../core/prismaClient');
 const { authenticate, authorize } = require('../middleware/rbac');
 const { nextSONumber, nextInvoiceNumber } = require('../core/sequence');
 const { postCustomerInvoice } = require('./postingEngine');
+const { calculateLineGst, roundTo } = require('../core/gstCalc');
 
 const router = express.Router();
 
@@ -130,7 +131,7 @@ router.post('/orders/:id/create-invoice', authenticate, authorize(['ADMIN', 'ACC
   try {
     const order = await prisma.salesOrder.findUnique({
       where: { id: parseInt(req.params.id) },
-      include: { lines: true }
+      include: { lines: { include: { product: true } }, customer: true }
     });
     if (!order) return res.status(404).json({ error: 'Sales Order not found' });
     if (order.status !== 'CONFIRMED') return res.status(400).json({ error: 'Confirm the order before creating an invoice' });
@@ -139,8 +140,33 @@ router.post('/orders/:id/create-invoice', authenticate, authorize(['ADMIN', 'ACC
     if (existing) return res.status(400).json({ error: 'An invoice already exists for this order' });
 
     const invoiceNumber = await nextInvoiceNumber();
-    const totalAmount   = order.lines.reduce((s, l) => s + l.total, 0);
     const { invoiceRef, dueDate } = req.body;
+    const settings = await prisma.settings.findUnique({ where: { id: 1 } });
+
+    const lines = order.lines.map(l => {
+      const gstRate = l.product.gstRate || 0;
+      const gst = calculateLineGst({
+        taxableAmount: l.total,
+        gstRate,
+        partnerState:  order.customer.state,
+        companyState:  settings?.companyState
+      });
+      return {
+        productId:         l.productId,
+        analyticAccountId: l.analyticAccountId,
+        qty:               l.qty,
+        unitPrice:         l.unitPrice,
+        total:             l.total,
+        gstRate,
+        ...gst
+      };
+    });
+
+    const subTotal   = roundTo(lines.reduce((s, l) => s + l.total, 0));
+    const cgstAmount = roundTo(lines.reduce((s, l) => s + l.cgstAmount, 0));
+    const sgstAmount = roundTo(lines.reduce((s, l) => s + l.sgstAmount, 0));
+    const igstAmount = roundTo(lines.reduce((s, l) => s + l.igstAmount, 0));
+    const taxAmount  = roundTo(cgstAmount + sgstAmount + igstAmount);
 
     const invoice = await prisma.customerInvoice.create({
       data: {
@@ -149,17 +175,14 @@ router.post('/orders/:id/create-invoice', authenticate, authorize(['ADMIN', 'ACC
         customerId:  order.customerId,
         soId:        order.id,
         dueDate:     dueDate ? new Date(dueDate) : null,
-        totalAmount,
+        subTotal,
+        cgstAmount,
+        sgstAmount,
+        igstAmount,
+        taxAmount,
+        totalAmount: roundTo(subTotal + taxAmount),
         status:      'DRAFT',
-        lines: {
-          create: order.lines.map(l => ({
-            productId:         l.productId,
-            analyticAccountId: l.analyticAccountId,
-            qty:               l.qty,
-            unitPrice:         l.unitPrice,
-            total:             l.total
-          }))
-        }
+        lines: { create: lines }
       },
       include: { lines: true }
     });

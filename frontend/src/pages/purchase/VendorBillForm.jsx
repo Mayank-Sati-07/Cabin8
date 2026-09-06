@@ -50,11 +50,18 @@ export default function VendorBillForm() {
           <div className="form-group"><label className="form-label">Due Date</label><input className="form-input" value={bill.dueDate ? new Date(bill.dueDate).toLocaleDateString() : '—'} readOnly /></div>
         </div>
         <div className="form-row">
+          <div className="form-group"><label className="form-label">Subtotal</label><input className="form-input" value={formatCurrency(bill.subTotal)} readOnly /></div>
+          <div className="form-group"><label className="form-label">Tax (GST)</label><input className="form-input" value={formatCurrency(bill.taxAmount)} readOnly /></div>
           <div className="form-group"><label className="form-label">Total Amount</label><input className="form-input" value={formatCurrency(bill.totalAmount)} readOnly /></div>
           <div className="form-group"><label className="form-label">Amount Paid</label><input className="form-input" value={formatCurrency(bill.amountPaid)} readOnly /></div>
         </div>
         <h3 style={{ margin: 'var(--space-5) 0 var(--space-3)' }}>Bill Lines</h3>
-        <LineItemEditor lines={bill.lines || []} onChange={() => {}} readOnly />
+        <LineItemEditor
+          lines={bill.lines || []}
+          onChange={() => {}}
+          readOnly
+          taxSummary={{ subTotal: bill.subTotal, cgstAmount: bill.cgstAmount, sgstAmount: bill.sgstAmount, igstAmount: bill.igstAmount, totalAmount: bill.totalAmount }}
+        />
       </div></div>
     </>
   );

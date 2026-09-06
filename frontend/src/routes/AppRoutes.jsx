@@ -55,6 +55,9 @@ const BudgetReport = lazy(() => import('../pages/budget/BudgetReport'));
 const ProfitAndLoss = lazy(() => import('../pages/reports/ProfitAndLoss'));
 const BalanceSheet = lazy(() => import('../pages/reports/BalanceSheet'));
 
+// Settings
+const CompanySettings = lazy(() => import('../pages/settings/CompanySettings'));
+
 // Portal
 const PortalDashboard = lazy(() => import('../pages/portal/PortalDashboard'));
 const PortalInvoiceList = lazy(() => import('../pages/portal/PortalInvoiceList'));
@@ -136,6 +139,9 @@ export default function AppRoutes() {
           <Route path="/reports/profit-loss" element={<Internal><ProfitAndLoss /></Internal>} />
           <Route path="/reports/balance-sheet" element={<Internal><BalanceSheet /></Internal>} />
           <Route path="/reports/budget" element={<Internal><BudgetReport /></Internal>} />
+
+          {/* Settings */}
+          <Route path="/settings/company" element={<ProtectedRoute roles={[ROLES.ADMIN]}><CompanySettings /></ProtectedRoute>} />
 
           {/* Portal */}
           <Route path="/portal" element={<Portal><PortalDashboard /></Portal>} />

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Users, Package, ShoppingCart, FileText,
   BookOpen, PieChart, Wallet, TrendingUp, Calculator,
-  ClipboardList, Receipt, CreditCard, BarChart3, Globe, Tags, UserPlus
+  ClipboardList, Receipt, CreditCard, BarChart3, Globe, Tags, UserPlus, Settings
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { usePermission } from '../hooks/usePermission';
@@ -72,6 +72,7 @@ const adminGroup = {
   label: 'Administration',
   items: [
     { to: '/auth/create-user', icon: UserPlus, label: 'Create User' },
+    { to: '/settings/company', icon: Settings, label: 'Company Settings' },
   ],
 };
 

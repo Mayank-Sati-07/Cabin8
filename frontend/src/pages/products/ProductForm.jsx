@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import ImageUpload from '../../components/ImageUpload';
 import { productsApi, productCategoriesApi } from '../../api';
 
-const emptyProduct = { name: '', type: 'GOODS', salesPrice: 0, cost: 0, categoryId: '', image: '' };
+const emptyProduct = { name: '', type: 'GOODS', salesPrice: 0, cost: 0, gstRate: 0, categoryId: '', image: '' };
 
 export default function ProductForm() {
   const { id } = useParams();
@@ -43,6 +43,7 @@ export default function ProductForm() {
       type: form.type,
       salesPrice: parseFloat(form.salesPrice) || 0,
       cost: parseFloat(form.cost) || 0,
+      gstRate: parseFloat(form.gstRate) || 0,
       categoryId: form.categoryId ? parseInt(form.categoryId) : null,
       image: form.image || null,
     };
@@ -80,6 +81,17 @@ export default function ProductForm() {
               <div className="form-row">
                 <div className="form-group"><label className="form-label">Sales Price <span className="required">*</span></label><input type="number" className="form-input" step="0.01" value={form.salesPrice} onChange={e => handleChange('salesPrice', e.target.value)} required /></div>
                 <div className="form-group"><label className="form-label">Cost <span className="required">*</span></label><input type="number" className="form-input" step="0.01" value={form.cost} onChange={e => handleChange('cost', e.target.value)} required /></div>
+              </div>
+              <div className="form-row">
+                <div className="form-group"><label className="form-label">GST Rate (%)</label>
+                  <select className="form-select" value={form.gstRate} onChange={e => handleChange('gstRate', e.target.value)}>
+                    <option value="0">Exempt (0%)</option>
+                    <option value="5">5%</option>
+                    <option value="12">12%</option>
+                    <option value="18">18%</option>
+                    <option value="28">28%</option>
+                  </select>
+                </div>
               </div>
               <div className="form-group"><label className="form-label">Category</label>
                 <div style={{ display: 'flex', gap: 'var(--space-2)' }}>

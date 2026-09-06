@@ -15,6 +15,7 @@ const portal = require('./modules/portal');
 const ai = require('./modules/ai');
 const search = require('./modules/search');
 const notifications = require('./modules/notifications');
+const settings = require('./modules/settings');
 
 const router = express.Router();
 
@@ -40,5 +41,6 @@ router.use('/portal', portal);
 router.use('/ai', ai);
 router.use('/search', search);
 router.use('/notifications', notifications);
+router.use('/settings', settings);
 
 module.exports = router;

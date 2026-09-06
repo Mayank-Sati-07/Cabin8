@@ -39,6 +39,12 @@ async function upsertAnalyticAccount(name, type) {
   return prisma.analyticAccount.create({ data: { name, type } });
 }
 
+async function upsertSettings(data) {
+  const existing = await prisma.settings.findUnique({ where: { id: 1 } });
+  if (existing) return existing;
+  return prisma.settings.create({ data: { id: 1, ...data } });
+}
+
 async function upsertUser({ name, loginId, email, password, role, contactId }) {
   const existing = await prisma.user.findUnique({ where: { loginId } });
   if (existing) return existing;
@@ -58,6 +64,17 @@ async function main() {
   const bank            = await upsertAccount('Bank', 'BANK');
   await upsertAccount('Capital', 'CAPITAL');
   await upsertAccount('Other Expense', 'OTHER_EXPENSE');
+  await upsertAccount('CGST Input', 'ASSET');
+  await upsertAccount('SGST Input', 'ASSET');
+  await upsertAccount('IGST Input', 'ASSET');
+  await upsertAccount('CGST Output', 'LIABILITY');
+  await upsertAccount('SGST Output', 'LIABILITY');
+  await upsertAccount('IGST Output', 'LIABILITY');
+
+  // ── Company settings ────────────────────────────────────────────────────
+  console.log('Seeding company settings...');
+
+  await upsertSettings({ companyState: 'Maharashtra' });
 
   // ── Journals ────────────────────────────────────────────────────────────
   console.log('Seeding journals...');
@@ -123,7 +140,8 @@ async function main() {
 
   const products = {};
   for (const [name, type, cost, salesPrice, categoryName] of productDefs) {
-    products[name] = await upsertProduct({ name, type, cost, salesPrice, categoryId: categories[categoryName].id });
+    const gstRate = categoryName === 'Raw Materials' ? 12 : 18;
+    products[name] = await upsertProduct({ name, type, cost, salesPrice, gstRate, categoryId: categories[categoryName].id });
   }
 
   // ── Analytic accounts ────────────────────────────────────────────────────

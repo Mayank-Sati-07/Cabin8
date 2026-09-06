@@ -12,6 +12,14 @@ async function getAccount(name) {
   return account;
 }
 
+// GST accounts aren't part of the original seed, so create them on first use
+// instead of forcing everyone to re-run the seed script after this feature.
+async function getOrCreateAccount(name, type) {
+  const existing = await prisma.account.findFirst({ where: { name } });
+  if (existing) return existing;
+  return prisma.account.create({ data: { name, type } });
+}
+
 async function post({ journalType, reference, partnerId, billId, invoiceId, items }) {
   const journal = await getJournal(journalType);
 
@@ -47,38 +55,48 @@ async function post({ journalType, reference, partnerId, billId, invoiceId, item
 }
 
 // VENDOR BILL CONFIRMED
-// Debit: Purchase Expense  Credit: Creditors
+// Debit: Purchase Expense + GST Input (recoverable)  Credit: Creditors (grand total)
 async function postVendorBill(bill) {
   const purchaseExpense = await getAccount('Purchase Expense');
   const creditors       = await getAccount('Creditors');
+
+  const items = [
+    { accountId: purchaseExpense.id, debit: bill.subTotal ?? bill.totalAmount, credit: 0 }
+  ];
+  if (bill.cgstAmount) items.push({ accountId: (await getOrCreateAccount('CGST Input', 'ASSET')).id, debit: bill.cgstAmount, credit: 0 });
+  if (bill.sgstAmount) items.push({ accountId: (await getOrCreateAccount('SGST Input', 'ASSET')).id, debit: bill.sgstAmount, credit: 0 });
+  if (bill.igstAmount) items.push({ accountId: (await getOrCreateAccount('IGST Input', 'ASSET')).id, debit: bill.igstAmount, credit: 0 });
+  items.push({ accountId: creditors.id, debit: 0, credit: bill.totalAmount });
 
   return post({
     journalType: 'PURCHASE',
     reference:   bill.billNumber,
     partnerId:   bill.vendorId,
     billId:      bill.id,
-    items: [
-      { accountId: purchaseExpense.id, debit: bill.totalAmount, credit: 0 },
-      { accountId: creditors.id,       debit: 0, credit: bill.totalAmount }
-    ]
+    items
   });
 }
 
 // CUSTOMER INVOICE CONFIRMED
-// Debit: Debtors  Credit: Sale Income
+// Debit: Debtors (grand total)  Credit: Sale Income + GST Output (payable)
 async function postCustomerInvoice(invoice) {
   const debtors    = await getAccount('Debtors');
   const saleIncome = await getAccount('Sale Income');
+
+  const items = [
+    { accountId: debtors.id, debit: invoice.totalAmount, credit: 0 },
+    { accountId: saleIncome.id, debit: 0, credit: invoice.subTotal ?? invoice.totalAmount }
+  ];
+  if (invoice.cgstAmount) items.push({ accountId: (await getOrCreateAccount('CGST Output', 'LIABILITY')).id, debit: 0, credit: invoice.cgstAmount });
+  if (invoice.sgstAmount) items.push({ accountId: (await getOrCreateAccount('SGST Output', 'LIABILITY')).id, debit: 0, credit: invoice.sgstAmount });
+  if (invoice.igstAmount) items.push({ accountId: (await getOrCreateAccount('IGST Output', 'LIABILITY')).id, debit: 0, credit: invoice.igstAmount });
 
   return post({
     journalType: 'SALES',
     reference:   invoice.invoiceNumber,
     partnerId:   invoice.customerId,
     invoiceId:   invoice.id,
-    items: [
-      { accountId: debtors.id,    debit: invoice.totalAmount, credit: 0 },
-      { accountId: saleIncome.id, debit: 0, credit: invoice.totalAmount }
-    ]
+    items
   });
 }
 

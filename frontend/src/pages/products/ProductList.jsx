@@ -38,6 +38,7 @@ export default function ProductList() {
     { key: 'category', label: 'Category', render: (row) => categoryName(row.categoryId) },
     { key: 'salesPrice', label: 'Sales Price', accessor: 'salesPrice', className: 'cell-amount', render: (row) => formatCurrency(row.salesPrice) },
     { key: 'cost', label: 'Cost', accessor: 'cost', className: 'cell-amount', render: (row) => formatCurrency(row.cost) },
+    { key: 'gstRate', label: 'GST', accessor: 'gstRate', className: 'cell-amount', render: (row) => `${row.gstRate || 0}%` },
     { key: 'margin', label: 'Margin %', className: 'cell-amount', render: (row) => {
       const margin = row.salesPrice > 0 ? (((row.salesPrice - row.cost) / row.salesPrice) * 100).toFixed(1) : '0.0';
       return <span style={{ color: margin > 0 ? 'var(--color-success)' : 'var(--color-destructive)' }}>{margin}%</span>;

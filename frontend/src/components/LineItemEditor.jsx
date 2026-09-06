@@ -2,7 +2,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { formatCurrency } from '../utils/currency';
 import { calculateLineTotal, calculateOrderTotals } from '../utils/taxCalc';
 
-export default function LineItemEditor({ lines, onChange, products = [], analyticAccounts = [], readOnly = false }) {
+export default function LineItemEditor({ lines, onChange, products = [], analyticAccounts = [], readOnly = false, taxSummary = null }) {
   const handleAddLine = () => {
     const newLine = { id: Date.now().toString(), productId: '', analyticAccountId: '', qty: 1, unitPrice: 0 };
     onChange([...lines, newLine]);
@@ -33,11 +33,13 @@ export default function LineItemEditor({ lines, onChange, products = [], analyti
         <table className="line-item-table">
           <thead>
             <tr>
-              <th style={{ width: '30%' }}>Product</th>
-              <th style={{ width: '25%' }}>Analytic Account</th>
-              <th style={{ width: '12%' }}>Qty</th>
-              <th style={{ width: '16%' }}>Unit Price</th>
-              <th style={{ width: '17%' }} className="col-amount">Total</th>
+              <th style={{ width: '25%' }}>Product</th>
+              <th style={{ width: '20%' }}>Analytic Account</th>
+              <th style={{ width: '10%' }}>Qty</th>
+              <th style={{ width: '14%' }}>Unit Price</th>
+              {taxSummary && <th style={{ width: '8%' }}>GST %</th>}
+              {taxSummary && <th style={{ width: '11%' }} className="col-amount">Tax</th>}
+              <th style={{ width: '15%' }} className="col-amount">Total</th>
               {!readOnly && <th style={{ width: '7%' }}></th>}
             </tr>
           </thead>
@@ -98,6 +100,8 @@ export default function LineItemEditor({ lines, onChange, products = [], analyti
                       />
                     )}
                   </td>
+                  {taxSummary && <td>{line.gstRate || 0}%</td>}
+                  {taxSummary && <td className="col-amount">{formatCurrency((line.cgstAmount || 0) + (line.sgstAmount || 0) + (line.igstAmount || 0))}</td>}
                   <td className="col-amount">{formatCurrency(total)}</td>
                   {!readOnly && (
                     <td>
@@ -120,10 +124,20 @@ export default function LineItemEditor({ lines, onChange, products = [], analyti
       )}
 
       <div className="line-item-totals">
-        <div className="total-row grand">
-          <span className="total-label">Total</span>
-          <span className="total-value">{formatCurrency(totals.grandTotal)}</span>
-        </div>
+        {taxSummary ? (
+          <>
+            <div className="total-row"><span className="total-label">Subtotal</span><span className="total-value">{formatCurrency(taxSummary.subTotal)}</span></div>
+            {taxSummary.cgstAmount > 0 && <div className="total-row"><span className="total-label">CGST</span><span className="total-value">{formatCurrency(taxSummary.cgstAmount)}</span></div>}
+            {taxSummary.sgstAmount > 0 && <div className="total-row"><span className="total-label">SGST</span><span className="total-value">{formatCurrency(taxSummary.sgstAmount)}</span></div>}
+            {taxSummary.igstAmount > 0 && <div className="total-row"><span className="total-label">IGST</span><span className="total-value">{formatCurrency(taxSummary.igstAmount)}</span></div>}
+            <div className="total-row grand"><span className="total-label">Total</span><span className="total-value">{formatCurrency(taxSummary.totalAmount)}</span></div>
+          </>
+        ) : (
+          <div className="total-row grand">
+            <span className="total-label">Total</span>
+            <span className="total-value">{formatCurrency(totals.grandTotal)}</span>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ const prisma = require('../core/prismaClient');
 const { authenticate, authorize } = require('../middleware/rbac');
 const { nextPONumber, nextBillNumber } = require('../core/sequence');
 const { postVendorBill } = require('./postingEngine');
+const { calculateLineGst, roundTo } = require('../core/gstCalc');
 
 const router = express.Router();
 
@@ -130,7 +131,7 @@ router.post('/orders/:id/create-bill', authenticate, authorize(['ADMIN', 'ACCOUN
   try {
     const order = await prisma.purchaseOrder.findUnique({
       where: { id: parseInt(req.params.id) },
-      include: { lines: true }
+      include: { lines: { include: { product: true } }, vendor: true }
     });
     if (!order) return res.status(404).json({ error: 'Purchase Order not found' });
     if (order.status !== 'CONFIRMED') return res.status(400).json({ error: 'Confirm the order before creating a bill' });
@@ -138,9 +139,34 @@ router.post('/orders/:id/create-bill', authenticate, authorize(['ADMIN', 'ACCOUN
     const existing = await prisma.vendorBill.findFirst({ where: { poId: order.id } });
     if (existing) return res.status(400).json({ error: 'A bill already exists for this order' });
 
-    const billNumber  = await nextBillNumber();
-    const totalAmount = order.lines.reduce((s, l) => s + l.total, 0);
+    const billNumber = await nextBillNumber();
     const { vendorBillNo, dueDate } = req.body;
+    const settings = await prisma.settings.findUnique({ where: { id: 1 } });
+
+    const lines = order.lines.map(l => {
+      const gstRate = l.product.gstRate || 0;
+      const gst = calculateLineGst({
+        taxableAmount: l.total,
+        gstRate,
+        partnerState:  order.vendor.state,
+        companyState:  settings?.companyState
+      });
+      return {
+        productId:         l.productId,
+        analyticAccountId: l.analyticAccountId,
+        qty:               l.qty,
+        unitPrice:         l.unitPrice,
+        total:             l.total,
+        gstRate,
+        ...gst
+      };
+    });
+
+    const subTotal   = roundTo(lines.reduce((s, l) => s + l.total, 0));
+    const cgstAmount = roundTo(lines.reduce((s, l) => s + l.cgstAmount, 0));
+    const sgstAmount = roundTo(lines.reduce((s, l) => s + l.sgstAmount, 0));
+    const igstAmount = roundTo(lines.reduce((s, l) => s + l.igstAmount, 0));
+    const taxAmount  = roundTo(cgstAmount + sgstAmount + igstAmount);
 
     const bill = await prisma.vendorBill.create({
       data: {
@@ -149,17 +175,14 @@ router.post('/orders/:id/create-bill', authenticate, authorize(['ADMIN', 'ACCOUN
         vendorId:     order.vendorId,
         poId:         order.id,
         dueDate:      dueDate ? new Date(dueDate) : null,
-        totalAmount,
+        subTotal,
+        cgstAmount,
+        sgstAmount,
+        igstAmount,
+        taxAmount,
+        totalAmount:  roundTo(subTotal + taxAmount),
         status:       'DRAFT',
-        lines: {
-          create: order.lines.map(l => ({
-            productId:         l.productId,
-            analyticAccountId: l.analyticAccountId,
-            qty:               l.qty,
-            unitPrice:         l.unitPrice,
-            total:             l.total
-          }))
-        }
+        lines: { create: lines }
       },
       include: { lines: true }
     });
